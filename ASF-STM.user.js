@@ -569,8 +569,8 @@
                     username = result[1];
                     debugPrint(username);
                     addMatchRow(index, username);
-                    callback();
                 }
+                callback();
             } else {
                 if (stop) {
                     updateMessage("Interrupted by user");
