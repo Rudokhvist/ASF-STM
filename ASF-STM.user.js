@@ -210,7 +210,7 @@
             //add filter
             let checkBox = document.getElementById("astm_" + appId);
             if (checkBox == null) {
-                let newFilter = `<span style="margin-right: 15px; white-space: nowrap; display: inline-block;"><input type="checkbox" id="astm_${appId}" checked="" />${gameName}</span>`;
+                let newFilter = `<span style="margin-right: 15px; white-space: nowrap; display: inline-block;"><input type="checkbox" id="astm_${appId}" checked="" /><label for="astm_${appId}">${gameName}</label></span>`;
                 let spanTemplate = document.createElement("template");
                 spanTemplate.innerHTML = newFilter.trim();
                 filterWidget.appendChild(spanTemplate.content.firstChild);
@@ -564,9 +564,12 @@
             if (status === 200) {
                 errors = 0;
                 let re = /<steamID><!\[CDATA\[(.+)\]\]><\/steamID>/g;
-                username = re.exec(xhr.response)[1];
-                debugPrint(username);
-                addMatchRow(index, username);
+                let result = re.exec(xhr.response);
+                if (result) {
+                    username = result[1];
+                    debugPrint(username);
+                    addMatchRow(index, username);
+                }
                 callback();
             } else {
                 if (stop) {
