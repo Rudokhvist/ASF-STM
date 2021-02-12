@@ -564,8 +564,9 @@
             if (status === 200) {
                 errors = 0;
                 let re = /<steamID><!\[CDATA\[(.+)\]\]><\/steamID>/g;
-                username = re.exec(xhr.response)[1];
-                if (username) {
+                let result = re.exec(xhr.response);
+                if (result) {
+                    username = result[1];
                     debugPrint(username);
                     addMatchRow(index, username);
                     callback();
