@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     1.5
+// @version     1.6
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -568,8 +568,8 @@
                 if (result) {
                     username = result[1];
                     debugPrint(username);
-                    addMatchRow(index, username);
-                }
+		}
+                addMatchRow(index, username);
                 callback();
             } else {
                 if (stop) {
