@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     1.6
+// @version     1.7
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -17,11 +17,16 @@
 
 (function() {
     "use strict";
-    const limiter = 0;
-    const errorLimiter = 1000;
+    const limiter = 120000;
+    const weblimiter = 2000;
+    const errorLimiter = 600000;
+    const maxInventoryItemsPerRequest = 5000;
+    const maxSelfInventoryItemsPerRequest = 5000;
     const debug = false;
     const maxErrors = 5;
     const filterBackgroundColor = 'rgba(103, 193, 245, 0.2)';
+    let mySteamID = 0;
+    let myProfileLink = 0;
     let errors = 0;
     let bots;
     let assets = [];
@@ -45,7 +50,7 @@
 
     function debugPrint(msg) {
         if (debug) {
-            console.log(msg);
+            console.log(new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit",second: "2-digit", fractionalSecondDigits: 3}) + " : " + msg);
         }
     }
 
@@ -232,7 +237,7 @@
                         <img alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg">
                         <div>
                           <div title="View badge progress for this game">
-                            <a target="_blank" href="https://steamcommunity.com/my/gamecards/${appId}/">${gameName}</a>
+                            <a target="_blank" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">${gameName}</a>
                           </div>
                         </div>
                         <div class="btn_darkblue_white_innerfade btn_medium">
@@ -301,7 +306,7 @@
     }
 
     function fetchInventory(steamId, startAsset, callback) {
-        let url = "https://steamcommunity.com/inventory/" + steamId + "/753/6?l=english&count=5000&l=english";
+        let url = "https://steamcommunity.com/inventory/" + steamId + "/753/6?l=english&count="+((steamId==mySteamID)?maxSelfInventoryItemsPerRequest:maxInventoryItemsPerRequest)+"&l=english";
         if (startAsset > 0) {
             url = url + "&start_assetid=" + startAsset.toString();
         } else {
@@ -351,7 +356,7 @@
                     return function() {
                         fetchInventory(steamId, startAsset, callback);
                     };
-                })(steamId, lastAsset, callback), limiter+errorLimiter*errors);
+                })(steamId, lastAsset, callback), ((steamId==mySteamID)?weblimiter:limiter)+errorLimiter*errors);
             } else {
                 updateMessage("Error getting inventory, ERROR " + status);
                 hideThrobber();
@@ -376,7 +381,7 @@
                     return function() {
                         fetchInventory(steamId, startAsset, callback);
                     };
-                })(steamId, startAsset, callback), limiter+errorLimiter*errors);
+                })(steamId, startAsset, callback), ((steamId==mySteamID)?weblimiter:limiter)+errorLimiter*errors);
             } else {
                 debugPrint("error getting inventory");
                 updateMessage("Error getting inventory");
@@ -586,7 +591,7 @@
                         return function() {
                             getUsername(index, callback);
                         };
-                    })(index, callback), limiter+errorLimiter*errors);
+                    })(index, callback), weblimiter+errorLimiter*errors);
                 } else {
                     debugPrint("error HTTP Status=" + status);
                     updateMessage("Error getting username data, ERROR=" + status);
@@ -613,7 +618,7 @@
                     return function() {
                         getUsername(index, callback);
                     };
-                })(index, callback), limiter+errorLimiter*errors);
+                })(index, callback), weblimiter+errorLimiter*errors);
             } else {
                 debugPrint("error");
                 updateMessage("Error getting username data");
@@ -732,7 +737,7 @@
     function populateMaxCards(index) {
         while (index < myBadges.length) {
             if (myBadges[index].maxCards === 0) {
-                let url = "https://steamcommunity.com/my/gamecards/" + myBadges[index].appId + "?l=english";
+                let url = "https://steamcommunity.com/" + myProfileLink + "/gamecards/" + myBadges[index].appId + "?l=english";
                 let xhr = new XMLHttpRequest();
                 xhr.open("GET", url, true);
                 xhr.responseType = "document";
@@ -761,7 +766,7 @@
                             return function() {
                                 populateMaxCards(index);
                             };
-                        })(index), limiter+errorLimiter*errors);
+                        })(index), weblimiter+errorLimiter*errors);
                     } else {
                         updateMessage("Error getting badge data, ERROR " + status);
                         hideThrobber();
@@ -787,7 +792,7 @@
                             return function() {
                                 populateMaxCards(index);
                             };
-                        })(index), limiter+errorLimiter*errors);
+                        })(index), weblimiter+errorLimiter*errors);
                         return;
                     } else {
                         debugPrint("error");
@@ -809,8 +814,8 @@
         updateMessage("Fetching own inventory");
         //g_steamID is a global steam variable
         let re = /g_steamID = "(.*)";/g;
-        let g_steamID = re.exec(document.documentElement.textContent)[1];
-        fetchInventory(g_steamID, 0, function() {
+        mySteamID = re.exec(document.documentElement.textContent)[1];
+        fetchInventory(mySteamID, 0, function() {
             debugPrint("fetched");
             debugPrint(deepClone(assets));
             debugPrint(deepClone(descriptions));
@@ -825,12 +830,16 @@
                 stopButton.remove();
                 return;
             }
-            checkUser(0);
+            setTimeout((function() {
+                    return function() {
+                        checkUser(0);
+                    };
+                })(), 10*limiter+errorLimiter*errors);
         });
     }
 
     function getBadges(page) {
-        let url = "https://steamcommunity.com/my/badges?p=" + page + "&l=english";
+        let url = "https://steamcommunity.com/" + myProfileLink + "/badges?p=" + page + "&l=english";
         let xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
         xhr.responseType = "document";
@@ -892,7 +901,7 @@
                         return function() {
                             getBadges(page);
                         };
-                    })(page), limiter+errorLimiter*errors);
+                    })(page), weblimiter+errorLimiter*errors);
                 } else {
                     debugPrint("all badge pages processed");
                     if (myBadges.length === 0) {
@@ -930,7 +939,7 @@
                     return function() {
                         getBadges(page);
                     };
-                })(page), limiter+errorLimiter*errors);
+                })(page), weblimiter+errorLimiter*errors);
             } else {
                 debugPrint("error getting badge page");
                 updateMessage("Error getting badge page");
@@ -1063,6 +1072,16 @@
     }
 
     if (document.getElementsByClassName("badge_details_set_favorite").length != 0) {
+        let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
+        let result = profileRegex.exec(document.location);
+        if (result) {
+            myProfileLink = result[1];
+        } else { //should never happen, but whatever.
+            myProfileLink = "my"
+        }
+
+        debugPrint(profileRegex);
+
         let requestUrl = "https://asf.justarchi.net/Api/Bots";
         let requestFunc;
         if (typeof (GM_xmlhttpRequest) !== "function") {
@@ -1086,10 +1105,10 @@
                 bots.sort(function(a, b) { //sort received array as I like it. TODO: sort according to settings
                     let result = b.match_everything - a.match_everything; //bots with match_everything go first
                     if (result === 0) {
-                        result = b.items_count - a.items_count; //then by items_counts descending
+                        result = b.games_count - a.games_count; //then by games_count descending
                     }
                     if (result === 0) {
-                        result = b.games_count - a.games_count; //then by games_count descending
+                        result = b.items_count - a.items_count; //then by items_counts descending
                     }
                     return result;
                 });
