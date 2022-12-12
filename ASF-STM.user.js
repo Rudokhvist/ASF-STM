@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        ASF STM DEV
+// @name        ASF STM
 // @language    English
 // @namespace   https://greasyfork.org/users/2205
 // @description ASF bot list trade matcher
