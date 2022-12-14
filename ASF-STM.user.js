@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.2
+// @version     2.3
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -561,6 +561,7 @@
                   </div>
                   <div class="badge_title">
                     <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots[index].SteamID}">${botname}</a>${any}
+                    &ensp;<span style="color: #8F98A0;">(${bots[index].TotalItemsCount} items)</span>
                   </div>
                 </div>
                 <div class="badge_title_rule"></div>
