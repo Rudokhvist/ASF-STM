@@ -25,7 +25,7 @@
     const filterBackgroundColor = 'rgba(23, 26, 33, 0.8)';//'rgba(103, 193, 245, 0.8)';
 
     //do not change
-    let myProfileLink = 0;
+    let myProfileLink = "";
     let errors = 0;
     let bots;
     let myBadges = [];
@@ -866,8 +866,18 @@
         debugTimeEnd("Filter and sort");
 
         if (userindex < 0) {
-            myBadges = deepClone(botBadges);
-            getClassID(0,0);
+            if (botBadges.length == 0) {
+                hideThrobber();
+                updateMessage("No cards to match");
+                enableButton();
+                let stopButton = document.getElementById("asf_stm_stop");
+                stopButton.remove();
+                return;
+            } else {
+                myBadges = deepClone(botBadges);
+                getClassID(0,0);
+                return;
+            }
         } else {
             debugPrint(bots[userindex].SteamID);
             compareCards(userindex, function() {
