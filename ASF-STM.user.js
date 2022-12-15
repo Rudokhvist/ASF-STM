@@ -288,12 +288,22 @@
                 debugPrint(JSON.stringify(searchResponse));
                 if (searchResponse.success == true && searchResponse.total_count > 0) {
                     let results = searchResponse.results;
-                    if (myBadges[index].cards[cardnumber].hash === null || myBadges[index].cards[cardnumber].hash === "") {
-                        debugPrint("looking by name");
-                        debugPrint(myBadges[index].cards[cardnumber].item);
+                    debugPrint("looking by name");
+                    debugPrint(myBadges[index].cards[cardnumber].item);
+                    for (let i = 0; i < results.length; i++) {
+                        debugPrint(results[i].name);
+                        if (results[i].name.trim().startsWith(myBadges[index].cards[cardnumber].item)) {
+                            myBadges[index].cards[cardnumber].hash = results[i].asset_description.market_hash_name;
+                            debugPrint(myBadges[index].cards[cardnumber].hash);
+                            break;
+                        }
+                    }
+                    if (myBadges[index].cards[cardnumber].hash === null || myBadges[index].cards[cardnumber].hash === "") { //if not found - search by icon
+                        debugPrint("looking by icon");
+                        debugPrint(myBadges[index].cards[cardnumber].iconUrl);
                         for (let i = 0; i < results.length; i++) {
-                             debugPrint(results[i].name);
-                            if (results[i].name.trim().startsWith(myBadges[index].cards[cardnumber].item)) {
+                            debugPrint(results[i].asset_description.icon_url);
+                            if (myBadges[index].cards[cardnumber].iconUrl.includes(results[i].asset_description.icon_url)) {
                                 myBadges[index].cards[cardnumber].hash = results[i].asset_description.market_hash_name;
                                 debugPrint(myBadges[index].cards[cardnumber].hash);
                                 break;
