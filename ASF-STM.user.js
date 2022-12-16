@@ -582,7 +582,7 @@
                      </div>
                   </div>
                   <div class="badge_title">
-                    <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots[index].SteamID}">${botname}</a>${any}
+                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots[index].SteamID}">${botname}</a>${any}
                     &ensp;<span style="color: #8F98A0;">(${bots[index].TotalItemsCount} items)</span>
                   </div>
                 </div>
