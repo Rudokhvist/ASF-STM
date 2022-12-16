@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.4
+// @version     2.5
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -135,7 +135,7 @@
         if (hashName == null) {
             hashName = myBadges[index].appId +"-"+ myBadges[index].cards[cardnumber].item;
         }
-        let marketUrl = "https://steamcommunity.com/market/listings/753/"+encodeURI(hashName);
+        let marketUrl = "https://steamcommunity.com/market/listings/753/"+encodeURIComponent(hashName);
         let xhr = new XMLHttpRequest();
         xhr.open("GET", marketUrl, true);
         xhr.responseType = "document";
@@ -173,7 +173,7 @@
                         })(index,cardnumber), weblimiter);
                         return;
                     } else {
-                        updateMessage("Error getting classid for card \""+myBadges[index].cards[cardnumber].hash+"\" ("+cardnumber+") from game"+myBadges[index].appId+", please report this!");
+                        updateMessage("Error getting classid for card \""+myBadges[index].cards[cardnumber].hash+"\" ("+cardnumber+") from game "+myBadges[index].appId+", please report this!");
                         hideThrobber();
                         enableButton();
                         let stopButton = document.getElementById("asf_stm_stop");
