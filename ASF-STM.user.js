@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.6
+// @version     2.7
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -22,6 +22,7 @@
     const errorLimiter = 30000;
     const debug = false;
     const maxErrors = 3;
+    const botCacheTime = 5 * 60000;
     const filterBackgroundColor = 'rgba(23, 26, 33, 0.8)';//'rgba(103, 193, 245, 0.8)';
 
     //do not change
@@ -104,7 +105,7 @@
 
     function updateProgress(index) {
         let bar = document.getElementById("asf_stm_progress");
-        let progress = 100 * ((index + 1) / bots.length);
+        let progress = 100 * ((index + 1) / bots.Result.length);
         bar.setAttribute("style", "width: " + progress + "%;");
     }
 
@@ -301,18 +302,18 @@
         let them = "";
         let you = "";
         //let filterWidget = document.getElementById("asf_stm_filters_body");
-        for (let i = 0; i < bots[index].itemsToSend.length; i++) {
-            let appId = bots[index].itemsToSend[i].appId;
+        for (let i = 0; i < bots.Result[index].itemsToSend.length; i++) {
+            let appId = bots.Result[index].itemsToSend[i].appId;
             let checkBox = document.getElementById("astm_" + appId);
             if (checkBox.checked) {
                 if (you != "") {
                     you += ";";
                 }
-                you = you + getClasses(bots[index].itemsToSend[i]);
+                you = you + getClasses(bots.Result[index].itemsToSend[i]);
                 if (them != "") {
                     them += ";";
                 }
-                them = them + getClasses(bots[index].itemsToReceive[i]);
+                them = them + getClasses(bots.Result[index].itemsToReceive[i]);
             }
         }
         splitUrl[3] = "them=" + them;
@@ -340,14 +341,14 @@
 
     function addMatchRow(index, botname) {
         debugPrint("addMatchRow " + index);
-        let itemsToSend = bots[index].itemsToSend;
-        let itemsToReceive = bots[index].itemsToReceive;
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots[index].SteamID) + "&token=" + bots[index].TradeToken + "&source=stm";
+        let itemsToSend = bots.Result[index].itemsToSend;
+        let itemsToReceive = bots.Result[index].itemsToReceive;
+        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=stm";
         let globalYou = "";
         let globalThem = "";
         let matches = "";
         let any = "";
-        if (bots[index].MatchEverything == 1) {
+        if (bots.Result[index].MatchEverything == 1) {
             any = `&nbsp;<sup><span class="avatar_block_status_in-game" style="font-size: 8px; cursor:help" title="This bots trades for any cards within same set">&nbsp;ANY&nbsp;</span></sup>`;
         }
         for (let i = 0; i < itemsToSend.length; i++) {
@@ -440,14 +441,14 @@
                   </div>
                   <div style="float: left;" class="">
                     <div class="user_avatar playerAvatar online">
-                      <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots[index].SteamID}">
-                        <img src="https://avatars.cloudflare.steamstatic.com/${bots[index].AvatarHash}.jpg" />
+                      <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">
+                        <img src="https://avatars.cloudflare.steamstatic.com/${bots.Result[index].AvatarHash}.jpg" />
                       </a>
                      </div>
                   </div>
                   <div class="badge_title">
-                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots[index].SteamID}">${botname}</a>${any}
-                    &ensp;<span style="color: #8F98A0;">(${bots[index].TotalItemsCount} items)</span>
+                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${botname}</a>${any}
+                    &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalItemsCount} items)</span>
                   </div>
                 </div>
                 <div class="badge_title_rule"></div>
@@ -507,7 +508,7 @@
                                     (myState == 1 && myBadge.cards[k].count > myBadge.lastSet)) { //that's fine for us
                                     debugPrint("it's a good trade for us");
                                     let theirInd = theirBadge.cards.findIndex(a => a.item == myBadge.cards[k].item); //index of slot where they will receive card
-                                    if (bots[index].MatchEverything == 0) { //make sure it's neutral+ for them
+                                    if (bots.Result[index].MatchEverything == 0) { //make sure it's neutral+ for them
                                         if (theirBadge.cards[theirInd].count >= theirBadge.cards[j].count) {
                                             debugPrint("Not fair for them");
                                             debugPrint("they have this: " + theirBadge.cards[theirInd].item + " (" + theirBadge.cards[theirInd].count + ")");
@@ -589,11 +590,11 @@
         debugPrint(JSON.stringify(itemsToSend));
         debugPrint("items to receive");
         debugPrint(JSON.stringify(itemsToReceive));
-        bots[index].itemsToSend = itemsToSend;
-        bots[index].itemsToReceive = itemsToReceive;
+        bots.Result[index].itemsToSend = itemsToSend;
+        bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
             //getUsername(index, callback);
-            addMatchRow(index, bots[index].Nickname);
+            addMatchRow(index, bots.Result[index].Nickname);
             callback();
         } else {
             debugPrint("no matches");
@@ -616,8 +617,8 @@
                 profileLink = myProfileLink;
                 updateMessage("Getting our data for badge " + (index + 1) + " of " + botBadges.length);
             } else {
-                profileLink = "profiles/" + bots[userindex].SteamID;
-                updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.length.toString()+" (badge " + (index + 1) + " of " + botBadges.length+")");
+                profileLink = "profiles/" + bots.Result[userindex].SteamID;
+                updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString()+" (badge " + (index + 1) + " of " + botBadges.length+")");
                 updateProgress(userindex);
             }
 
@@ -765,9 +766,9 @@
                 return;
             }
         } else {
-            debugPrint(bots[userindex].SteamID);
+            debugPrint(bots.Result[userindex].SteamID);
             compareCards(userindex, function() {
-                if (userindex < bots.length - 1) {
+                if (userindex < bots.Result.length - 1) {
                     setTimeout((function(userindex) {
                         return function() {
                             GetCards(0, userindex);
@@ -778,7 +779,7 @@
                     debugPrint(new Date(Date.now()));
                     hideThrobber();
                     hideMessage();
-                    updateProgress(bots.length - 1);
+                    updateProgress(bots.Result.length - 1);
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
                     stopButton.remove();
@@ -963,7 +964,8 @@
     }
 
     function buttonPressedEvent() {
-        if (bots === null) {
+        if (bots === null || bots.Result === undefined || bots.Result.length == 0 || bots.Success != true || bots.cacheTime + botCacheTime < Date.now()) {
+            debugPrint("Bot cache invalidated");
             fetchBots();
             return;
         }
@@ -1036,7 +1038,7 @@
     }
 
     function fetchBots() {
-                let requestUrl = "https://asf.justarchi.net/Api/Listing/Bots"; //"https://asf.justarchi.net/Api/Bots";
+                let requestUrl = "https://asf.justarchi.net/Api/Listing/Bots";
         let requestFunc;
         if (typeof (GM_xmlhttpRequest) !== "function") {
             requestFunc = GM.xmlHttpRequest.bind(GM);
@@ -1057,24 +1059,37 @@
                 try {
                     let re = /("SteamID":)(\d+)/g;
                     let fixedJson = response.response.replace(re, "$1\"$2\""); //because fuck js
-                    bots = JSON.parse(fixedJson).Result;
-                    //bots.filter(bot=>bot.matchable_cards===1||bot.matchable_foil_cards===1);  //I don't think this is really needed
-                    bots.sort(function(a, b) { //sort received array as I like it. TODO: sort according to settings
-                        let result = b.MatchEverything - a.MatchEverything; //bots with MatchEverything go first
-                        if (result === 0) {
-                            result = b.TotalGamesCount - a.TotalGamesCount; //then by TotalGamesCount descending
-                        }
-                        if (result === 0) {
-                            result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
-                        }
-                        return result;
-                    });
-                    debugPrint("found total " + bots.length + " bots");
-                    buttonPressedEvent();
+                    bots = JSON.parse(fixedJson);
+                    bots.cacheTime = Date.now();
+                    if (bots.Success) {
+                        //bots.filter(bot=>bot.matchable_cards===1||bot.matchable_foil_cards===1);  //I don't think this is really needed
+                        bots.Result.sort(function(a, b) { //sort received array as I like it. TODO: sort according to settings
+                            let result = b.MatchEverything - a.MatchEverything; //bots with MatchEverything go first
+                            if (result === 0) {
+                                result = b.TotalGamesCount - a.TotalGamesCount; //then by TotalGamesCount descending
+                            }
+                            if (result === 0) {
+                                result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
+                            }
+                            return result;
+                        });
+                        debugPrint("found total " + bots.Result.length + " bots");
+
+                        localStorage.setItem("Ryzhehvost.ASF.STM.BotCache",JSON.stringify(bots));
+                        buttonPressedEvent();
+                    } else {
+                        //ASF backend does not indicate success
+                        disableButton()
+                        document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots, try later");
+                        debugPrint("can't fetch list of bots");
+                        debugPrint(bots.Message);
+                        debugPrint(JSON.stringify(response));
+                        return;
+                    }
                     return;
                 } catch (e) {
                     disableButton()
-                    document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
+                    document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots, try later");
                     debugPrint("can't fetch list of bots");
                     debugPrint(e);
                     debugPrint(JSON.stringify(response));
@@ -1112,6 +1127,14 @@
         }
 
         debugPrint(profileRegex);
+
+        let botCache = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.BotCache"));
+        if (botCache === null || botCache.cacheTime === undefined || botCache.cacheTime === null || botCache.cacheTime + botCacheTime < Date.now()) {
+            botCache = null;
+            debugPrint("Bot cache invalidated");
+        } else {
+            bots = botCache;
+        }
 
         let buttonDiv = document.createElement("div");
         buttonDiv.setAttribute("class", "profile_small_header_additional");
