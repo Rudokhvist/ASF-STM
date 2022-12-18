@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.5
+// @version     2.6
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -108,165 +108,28 @@
         bar.setAttribute("style", "width: " + progress + "%;");
     }
 
-    function getClassID(index,cardnumber) {
-        debugPrint("card number "+cardnumber);
+    function getClassIDs(index) {
         updateMessage("Updating cards database for badge " + (index + 1) + " of " + myBadges.length);
-        if (classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[cardnumber].item)) {
-            //don't update if we already have this data; continue with rest of classes
-            cardnumber++;
-            if (cardnumber >= myBadges[index].maxCards) {
-                cardnumber=0;
-                index++;
-            }
-            debugPrint("index "+index+" length "+ myBadges.length);
-            if (index < myBadges.length) {
-                getClassID(index,cardnumber);
-            } else {
-                debugPrint(JSON.stringify(classIdsDB));
-                localStorage.setItem("Ryzhehvost.ASF.STM",JSON.stringify(classIdsDB));
-                setTimeout(function() {
-                    GetCards(0, 0);
-                }, weblimiter);
-            }
-            return;
-        }
-
-        let hashName = myBadges[index].cards[cardnumber].hash;
-        if (hashName == null) {
-            hashName = myBadges[index].appId +"-"+ myBadges[index].cards[cardnumber].item;
-        }
-        let marketUrl = "https://steamcommunity.com/market/listings/753/"+encodeURIComponent(hashName);
-        let xhr = new XMLHttpRequest();
-        xhr.open("GET", marketUrl, true);
-        xhr.responseType = "document";
-        xhr.onload = function() { // eslint-disable-line
-            if (stop) {
-                updateMessage("Interrupted by user");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-            let status = xhr.status;
-            if (status === 200) {
-                debugPrint("getting classid for " + hashName);
-                let classRegex = /"classid":"(\d+)"/g;
-                let match = classRegex.exec(xhr.response.documentElement.outerHTML);
-                if (match != null && match.length > 1) {
-                    errors = 0;
-                    let classid = match[1];
-                    if (classIdsDB[myBadges[index].appId] === undefined) {
-                        classIdsDB[myBadges[index].appId] = new Object();
-                    }
-                    let cardsClasses = classIdsDB[myBadges[index].appId];
-                    cardsClasses[myBadges[index].cards[cardnumber].item] = classid;
-                    if (myBadges[index].cards[cardnumber].hash == null) {
-                        myBadges[index].cards[cardnumber].hash = hashName;
-                    }
-                } else {
-                    if (myBadges[index].cards[cardnumber].hash == null) { //maybe we've got wrong hash, let's fix it
-                        setTimeout((function(index,cardnumber) {
-                            return function() {
-                                searchHashName(index,cardnumber);
-                            };
-                        })(index,cardnumber), weblimiter);
-                        return;
-                    } else {
-                        updateMessage("Error getting classid for card \""+myBadges[index].cards[cardnumber].hash+"\" ("+cardnumber+") from game "+myBadges[index].appId+", please report this!");
-                        hideThrobber();
-                        enableButton();
-                        let stopButton = document.getElementById("asf_stm_stop");
-                        stopButton.remove();
-                        return;
-                    }
-                }
-                //continue with rest of classes
-                cardnumber++;
-                if (cardnumber >= myBadges[index].maxCards) {
-                    cardnumber=0;
+        debugPrint("getClassIDs for " + myBadges[index].appId);
+        for (let i = 0; i< myBadges[index].maxCards; i++) {
+            if (classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[i].item)) {
+                if (i == myBadges[index].maxCards-1) { //it's last card, so it means we have them all
                     index++;
-                }
-                debugPrint("index "+index+" length "+ myBadges.length);
-                if (index < myBadges.length) {
-                    setTimeout((function(index,cardnumber) {
-                        return function() {
-                            getClassID(index,cardnumber);
-                        };
-                    })(index, cardnumber), weblimiter+errorLimiter*errors);
-                    return;
-                } else {
-                    debugPrint(JSON.stringify(classIdsDB));
-                    localStorage.setItem("Ryzhehvost.ASF.STM",JSON.stringify(classIdsDB));
-                    setTimeout(function() {
+                    if (index < myBadges.length) {
+                        getClassIDs(index);
+                    } else {
+                        debugPrint(JSON.stringify(classIdsDB));
+                        localStorage.setItem("Ryzhehvost.ASF.STM",JSON.stringify(classIdsDB));
+                        setTimeout(function() {
                             GetCards(0, 0);
-                    }, weblimiter);
+                        }, weblimiter);
+                    }
                     return;
                 }
             } else {
-                errors++;
-                if (myBadges[index].cards[cardnumber].hash == null) { //maybe we've got wrong hash, let's fix it
-                    setTimeout((function(index,cardnumber) {
-                        return function() {
-                            searchHashName(index,cardnumber);
-                        };
-                    })(index,cardnumber), weblimiter);
-                    return;
-                }
+                break; //missing something, update needed
             }
-            if ((status < 400 || status >= 500) && (errors <= maxErrors)) {
-                setTimeout((function(index,cardnumber) {
-                    return function() {
-                        getClassID(index,cardnumber);
-                    };
-                })(index,cardnumber), weblimiter+errorLimiter*errors);
-            } else {
-                if (status != 200) {
-                    updateMessage("Error getting classid data, ERROR " + status);
-                } else {
-                    updateMessage("Error getting classid data, malformed HTML");
-                }
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-
-        };
-        xhr.onerror = function() { // eslint-disable-line
-            if (stop) {
-                updateMessage("Interrupted by user");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-            errors++;
-            if (errors <= maxErrors) {
-                setTimeout((function(index,cardnumber) {
-                    return function() {
-                        getClassID(index,cardnumber);
-                    };
-                })(index,cardnumber), weblimiter+errorLimiter*errors);
-                return;
-            } else {
-                debugPrint("error");
-                updateMessage("Error getting badge data");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-        };
-        xhr.send();
-    }
-
-
-    function searchHashName(index,cardnumber) {
-        debugPrint("searchHashName for " + myBadges[index].cards[cardnumber].item + " from " + myBadges[index].appId);
+        }
         let searchUrl="https://steamcommunity.com/market/search/render/?start=0&count=15&search_descriptions=0&appid=753&category_753_Game[]=tag_app_"+myBadges[index].appId+"&category_753_cardborder[]=tag_cardborder_0&norender=1"
         debugPrint(searchUrl);
         let xhr = new XMLHttpRequest();
@@ -283,75 +146,76 @@
             }
             let status = xhr.status;
             if (status === 200) {
-                debugPrint("getting hashName for " + myBadges[index].cards[cardnumber].item);
                 let searchResponse = xhr.response;
                 debugPrint(JSON.stringify(searchResponse));
-                if (searchResponse.success == true && searchResponse.total_count > 0) {
+                if (searchResponse.success == true && searchResponse.total_count == myBadges[index].maxCards) {
                     let results = searchResponse.results;
-                    debugPrint("looking by name");
-                    debugPrint(myBadges[index].cards[cardnumber].item);
-                    for (let i = 0; i < results.length; i++) {
-                        debugPrint(results[i].name);
-                        if (results[i].name.trim().startsWith(myBadges[index].cards[cardnumber].item)) {
-                            myBadges[index].cards[cardnumber].hash = results[i].asset_description.market_hash_name;
-                            debugPrint(myBadges[index].cards[cardnumber].hash);
-                            break;
-                        }
-                    }
-                    if (myBadges[index].cards[cardnumber].hash === null || myBadges[index].cards[cardnumber].hash === "") { //if not found - search by icon
-                        debugPrint("looking by icon");
-                        debugPrint(myBadges[index].cards[cardnumber].iconUrl);
+                    for (let cardnumber=0; cardnumber < myBadges[index].maxCards; cardnumber++ ) {
+                        debugPrint("looking for card");
+                        debugPrint(myBadges[index].cards[cardnumber].item);
                         for (let i = 0; i < results.length; i++) {
-                            debugPrint(results[i].asset_description.icon_url);
-                            if (myBadges[index].cards[cardnumber].iconUrl.includes(results[i].asset_description.icon_url)) {
-                                myBadges[index].cards[cardnumber].hash = results[i].asset_description.market_hash_name;
-                                debugPrint(myBadges[index].cards[cardnumber].hash);
+                            debugPrint(results[i].name);
+                            if (results[i].name.trim().startsWith(myBadges[index].cards[cardnumber].item) ||
+                                (myBadges[index].cards[cardnumber].iconUrl.includes(results[i].asset_description.icon_url))) {
+                                debugPrint("found!");
+                                let classid = results[i].asset_description.classid;
+                                if (classIdsDB[myBadges[index].appId] === undefined) {
+                                    classIdsDB[myBadges[index].appId] = new Object();
+                                }
+                                let cardsClasses = classIdsDB[myBadges[index].appId];
+                                cardsClasses[myBadges[index].cards[cardnumber].item] = classid;
                                 break;
                             }
                         }
+                        if (!(classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[cardnumber].item))) {
+                             //still not found...
+                            updateMessage("Error getting classid for card \"" + myBadges[index].cards[cardnumber].item + "\" from "+ myBadges[index].appId + ", please report this!");
+                            hideThrobber();
+                            enableButton();
+                            let stopButton = document.getElementById("asf_stm_stop");
+                            stopButton.remove();
+                            return;
+                        }
                     }
+                } else {
+                    updateMessage("Error getting card data for "+ myBadges[index].appId + ", please report this!");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.remove();
+                    return;
                 }
-                if (myBadges[index].cards[cardnumber].hash === null || myBadges[index].cards[cardnumber].hash === "") {
-                    errors++;
-                    debugPrint("errors:"+errors);
-                    if (errors <= maxErrors) { //something went wrong, let's retry...
-                        setTimeout((function(index,cardnumber) {
-                            return function() {
-                                searchHashName(index,cardnumber);
-                            };
-                        })(index,cardnumber), weblimiter+errorLimiter*errors);
-                        return;
-                    } else {
-                        updateMessage("Error getting hashName for card \"" + myBadges[index].cards[cardnumber].item + "\" from "+ myBadges[index].appId + ", please report this!");
-                        hideThrobber();
-                        enableButton();
-                        let stopButton = document.getElementById("asf_stm_stop");
-                        stopButton.remove();
-                        return;
-                    }
-                }
-                //try again with correct hash name
+
                 errors = 0;
-                setTimeout((function(index,cardnumber) {
-                    return function() {
-                        getClassID(index,cardnumber);
-                    };
-                })(index,cardnumber), weblimiter+errorLimiter*errors);
+                index++;
+                if (index < myBadges.length) {
+                    setTimeout((function(index) {
+                        return function() {
+                            getClassIDs(index);
+                        };
+                    })(index), weblimiter+errorLimiter*errors);
+                } else {
+                    debugPrint(JSON.stringify(classIdsDB));
+                    localStorage.setItem("Ryzhehvost.ASF.STM",JSON.stringify(classIdsDB));
+                    setTimeout(function() {
+                        GetCards(0, 0);
+                    }, weblimiter);
+                }
                 return;
             } else {
                 errors++;
             }
             if ((status < 400 || status >= 500) && (errors <= maxErrors)) {
-                setTimeout((function(index,cardnumber) {
+                setTimeout((function(index) {
                     return function() {
-                        searchHashName(index,cardnumber);
+                        getClassIDs(index);
                     };
-                })(index,cardnumber), weblimiter+errorLimiter*errors);
+                })(index), weblimiter+errorLimiter*errors);
             } else {
                 if (status != 200) {
-                    updateMessage("Error getting hashName, ERROR " + status);
+                    updateMessage("Error getting classid, ERROR " + status);
                 } else {
-                    updateMessage("Error getting hashName, malformed HTML");
+                    updateMessage("Error getting classid, malformed json");
                 }
                 hideThrobber();
                 enableButton();
@@ -372,15 +236,15 @@
             }
             errors++;
             if (errors <= maxErrors) {
-                setTimeout((function(index,cardnumber) {
+                setTimeout((function(index) {
                     return function() {
-                        searchHashName(index,cardnumber);
+                        getClassIDs(index);
                     };
-                })(index,cardnumber), weblimiter+errorLimiter*errors);
+                })(index), weblimiter+errorLimiter*errors);
                 return;
             } else {
                 debugPrint("error");
-                updateMessage("Error getting badge data");
+                updateMessage("Error getting classid");
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
@@ -791,7 +655,6 @@
                             let icon = badgeCards[i].querySelector(".gamecard").src.trim();
                             let newcard = {
                                 "item": name,
-                                "hash": null,
                                 "count": Number(quantity),
                                 "iconUrl": icon
                             };
@@ -898,7 +761,7 @@
                 return;
             } else {
                 myBadges = deepClone(botBadges);
-                getClassID(0,0);
+                getClassIDs(0);
                 return;
             }
         } else {
