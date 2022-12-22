@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.7
+// @version     2.8
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -131,7 +131,7 @@
                 break; //missing something, update needed
             }
         }
-        let searchUrl="https://steamcommunity.com/market/search/render/?start=0&count=15&search_descriptions=0&appid=753&category_753_Game[]=tag_app_"+myBadges[index].appId+"&category_753_cardborder[]=tag_cardborder_0&norender=1"
+        let searchUrl="https://steamcommunity.com/market/search/render/?start=0&count=30&search_descriptions=0&appid=753&category_753_Game[]=tag_app_"+myBadges[index].appId+"&category_753_cardborder[]=tag_cardborder_0&norender=1"
         debugPrint(searchUrl);
         let xhr = new XMLHttpRequest();
         xhr.open("GET", searchUrl, true);
@@ -149,7 +149,7 @@
             if (status === 200) {
                 let searchResponse = xhr.response;
                 debugPrint(JSON.stringify(searchResponse));
-                if (searchResponse.success == true && searchResponse.total_count == myBadges[index].maxCards) {
+                if (searchResponse.success == true && searchResponse.total_count >= myBadges[index].maxCards) {
                     let results = searchResponse.results;
                     for (let cardnumber=0; cardnumber < myBadges[index].maxCards; cardnumber++ ) {
                         debugPrint("looking for card");
