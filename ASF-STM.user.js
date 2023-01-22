@@ -9,7 +9,7 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.8
+// @version     2.9
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -385,7 +385,8 @@
                   <div class="asf_stm_appid_${appId}" style="display:${display}">
                     <div class="badge_row is_link goo_untradable_note showcase_slot">
                       <div class="notLoggedInText">
-                        <img alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg">
+                        <img style="background-color: var(--gpStoreDarkerGrey);" height=69 alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg"
+                        onerror="this.onerror=null;this.src='https://store.akamai.steamstatic.com/public/images/gift/steam_logo_digitalgiftcard.png'">
                         <div>
                           <div title="View badge progress for this game">
                             <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">${gameName}</a>
@@ -442,13 +443,13 @@
                   <div style="float: left;" class="">
                     <div class="user_avatar playerAvatar online">
                       <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">
-                        <img src="https://avatars.cloudflare.steamstatic.com/${bots.Result[index].AvatarHash}.jpg" />
+                        <img src="https://avatars.cloudflare.steamstatic.com/${bots.Result[index].AvatarHash === null?"fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb":bots.Result[index].AvatarHash}.jpg" />
                       </a>
                      </div>
                   </div>
                   <div class="badge_title">
                     &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${botname}</a>${any}
-                    &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalItemsCount} items)</span>
+                    &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalInventoryCount} items)</span>
                   </div>
                 </div>
                 <div class="badge_title_rule"></div>
@@ -1070,6 +1071,9 @@
                             }
                             if (result === 0) {
                                 result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
+                            }
+                            if (result === 0) {
+                                result = a.TotalInventoryCount - b.TotalInventoryCount; //then by TotalInventoryCount ascending
                             }
                             return result;
                         });
