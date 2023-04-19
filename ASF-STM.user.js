@@ -352,6 +352,22 @@
         debugPrint("addMatchRow " + index);
         let itemsToSend = bots.Result[index].itemsToSend;
         let itemsToReceive = bots.Result[index].itemsToReceive;
+
+        // sort by game name
+        function compareNames(a, b) {
+            const nameA = a.title;
+            const nameB = b.title;
+            if (nameA < nameB) {
+                return -1;
+            }
+            if (nameA > nameB) {
+                return 1;
+            }
+            return 0;
+        }
+        itemsToSend.sort(compareNames);
+        itemsToReceive.sort(compareNames);
+
         let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=stm";
         let globalYou = "";
         let globalThem = "";
