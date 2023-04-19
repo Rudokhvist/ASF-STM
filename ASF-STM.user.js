@@ -12,6 +12,7 @@
 // @version     2.9
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
+// @grant       GM_addStyle
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
@@ -24,6 +25,14 @@
     const maxErrors = 3;
     const botCacheTime = 5 * 60000;
     const filterBackgroundColor = 'rgba(23, 26, 33, 0.8)';//'rgba(103, 193, 245, 0.8)';
+
+    //styles
+    const css = `
+    #asf_stm_filters_body {
+        max-height: calc(100vh - 95px);
+        overflow-y: auto;
+    }
+    `;
 
     //do not change
     let myProfileLink = "";
@@ -1154,5 +1163,6 @@
         let anchor = document.getElementsByClassName("profile_small_header_texture")[0];
         anchor.appendChild(buttonDiv);
         enableButton();
+        GM_addStyle(css);
     }
 })();
