@@ -1,19 +1,19 @@
 // ==UserScript==
-// @name        ASF STM
-// @language    English
-// @namespace   https://greasyfork.org/users/2205
-// @description ASF bot list trade matcher
-// @license     Apache-2.0
-// @author      Ryzhehvost
-// @include     http*://steamcommunity.com/id/*/badges
-// @include     http*://steamcommunity.com/id/*/badges/
-// @include     http*://steamcommunity.com/profiles/*/badges
-// @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.9
-// @connect     asf.justarchi.net
-// @grant       GM.xmlHttpRequest
-// @grant       GM_addStyle
-// @grant       GM_xmlhttpRequest
+// @name            ASF STM
+// @namespace       https://greasyfork.org/users/2205
+// @description     ASF bot list trade matcher
+// @description:vi  Trình khớp lệnh giao dịch danh sách bot ASF
+// @license         Apache-2.0
+// @author          Ryzhehvost
+// @match           http*://steamcommunity.com/id/*/badges
+// @match           http*://steamcommunity.com/id/*/badges/
+// @match           http*://steamcommunity.com/profiles/*/badges
+// @match           http*://steamcommunity.com/profiles/*/badges/
+// @version         2.9
+// @connect         asf.justarchi.net
+// @grant           GM.xmlHttpRequest
+// @grant           GM_addStyle
+// @grant           GM_xmlhttpRequest
 // ==/UserScript==
 
 (function() {
@@ -555,10 +555,10 @@
                                         "iconUrl": theirBadge.cards[j].iconUrl
                                     };
                                     //fill items to send
-                                    let sendmatch = itemsToSend.find(item => item.appId == myBadges[i].appId);
+                                    let sendmatch = itemsToSend.find(item => item.appId == myBadge.appId);
                                     if (sendmatch == undefined) {
                                         let newMatch = {
-                                            "appId": myBadges[i].appId,
+                                            "appId": myBadge.appId,
                                             "title": myBadge.title,
                                             "cards": [itemToSend]
                                         };
@@ -577,10 +577,10 @@
                                     myBadge.cards[k].count -= 1;
 
                                     //fill items to receive
-                                    let receiveMatch = itemsToReceive.find(item => item.appId == myBadges[i].appId);
+                                    let receiveMatch = itemsToReceive.find(item => item.appId == myBadge.appId);
                                     if (receiveMatch == undefined) {
                                         let newMatch = {
-                                            "appId": myBadges[i].appId,
+                                            "appId": myBadge.appId,
                                             "title": myBadge.title,
                                             "cards": [itemToReceive]
                                         };
