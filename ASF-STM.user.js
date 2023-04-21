@@ -9,7 +9,7 @@
 // @match           *://steamcommunity.com/id/*/badges/
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
-// @version         2.9
+// @version         2.10
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
