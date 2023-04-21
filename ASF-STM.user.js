@@ -5,10 +5,10 @@
 // @description:vi  Trình khớp lệnh giao dịch danh sách bot ASF
 // @license         Apache-2.0
 // @author          Ryzhehvost
-// @match           http*://steamcommunity.com/id/*/badges
-// @match           http*://steamcommunity.com/id/*/badges/
-// @match           http*://steamcommunity.com/profiles/*/badges
-// @match           http*://steamcommunity.com/profiles/*/badges/
+// @match           *://steamcommunity.com/id/*/badges
+// @match           *://steamcommunity.com/id/*/badges/
+// @match           *://steamcommunity.com/profiles/*/badges
+// @match           *://steamcommunity.com/profiles/*/badges/
 // @version         2.9
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
@@ -1215,6 +1215,20 @@
         let anchor = document.getElementsByClassName("profile_small_header_texture")[0];
         anchor.appendChild(buttonDiv);
         enableButton();
-        GM_addStyle(css);
+
+        // add our styles to the document's style sheet
+        if (typeof GM_addStyle != "undefined") {
+            GM_addStyle(css);
+        } else {
+            const node = document.createElement("style");
+            node.appendChild(document.createTextNode(css));
+            const heads = document.getElementsByTagName("head");
+            if (heads.length > 0) {
+                heads[0].appendChild(node);
+            } else {
+                // no head yet, stick it whereever
+                document.documentElement.appendChild(node);
+            }
+        }
     }
 })();
