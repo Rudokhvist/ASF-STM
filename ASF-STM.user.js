@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            ASF STM
+// @name            ASF STM DEV
 // @namespace       https://greasyfork.org/users/2205
 // @description     ASF bot list trade matcher
 // @description:vi  Trình khớp lệnh giao dịch danh sách bot ASF
@@ -9,7 +9,7 @@
 // @match           *://steamcommunity.com/id/*/badges/
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
-// @version         2.10
+// @version         3.0
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -1100,8 +1100,8 @@
         function restoreCookie(oldCookie) {
             "use strict";
             if (oldCookie) {
-                var now = new Date();
-                var time = now.getTime();
+                let now = new Date();
+                let time = now.getTime();
                 time += 15 * 24 * 60 * 60 * 1000;
                 now.setTime(time);
                 document.cookie = 'strTradeLastInventoryContext=' + oldCookie + '; expires=' + now.toUTCString() + '; path=/tradeoffer/';
@@ -1110,9 +1110,9 @@
 
         function addCards(g_s, g_v) {
             "use strict";
-            var tmpCards, inv, index, currentCards;
-            var failLater = false;
-            var cardTypes = [[], []];
+            let tmpCards, inv, index, currentCards;
+            let failLater = false;
+            let cardTypes = [[], []];
             g_v.Cards.forEach(function (requestedCards, i) {
                 tmpCards = {};
                 inv = g_v.Users[i].rgContexts[753][6].inventory;
@@ -1171,13 +1171,13 @@
             restoreCookie(g_v.oldCookie);
             // inject some JS to do something after trade offer is sent
             if (g_s.DO_AFTER_TRADE !== 'NOTHING') {
-                var functionToInject = 'var DO_AFTER_TRADE = "' + g_s.DO_AFTER_TRADE + '";';
+                let functionToInject = 'let DO_AFTER_TRADE = "' + g_s.DO_AFTER_TRADE + '";';
                 functionToInject += '$J(document).ajaxSuccess(function (event, xhr, settings) {';
                 functionToInject += 'if (settings.url === "https://steamcommunity.com/tradeoffer/new/send") {';
                 functionToInject += 'if (DO_AFTER_TRADE === "CLOSE_WINDOW") { window.close();';
                 functionToInject += '} else if (DO_AFTER_TRADE === "CLICK_OK") {';
                 functionToInject += 'document.querySelector("div.newmodal_buttons > div").click(); } } });';
-                var script = document.createElement('script');
+                let script = document.createElement('script');
                 script.appendChild(document.createTextNode(functionToInject));
                 document.body.appendChild(script);
             }
@@ -1190,7 +1190,7 @@
 
         function checkContexts(g_s, g_v) {
             "use strict";
-            var ready = 0;
+            let ready = 0;
             // check if Steam loaded everything needed
             g_v.Users.forEach(function (user) {
                 if (user.rgContexts && user.rgContexts[753] && user.rgContexts[753][6]) {
@@ -1225,8 +1225,8 @@
 
         function getUrlVars() {
             "use strict";
-            var vars = [];
-            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            let vars = [];
+            let hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
             hashes.forEach(function (hash) {
                 hash = hash.split('=');
                 vars.push(hash[0]);
@@ -1264,11 +1264,11 @@
 
         function prepareSettings(g_s) { //!!! TODO
             "use strict";
-            var template = '<div class="panel panel-default"><div class="panel-heading">' +
+            let template = '<div class="panel panel-default"><div class="panel-heading">' +
                 '<h3 class="panel-title">{T}</h3></div><div class="panel-body">{B}</div></div>';
-            var content = document.getElementById('content');
+            let content = document.getElementById('content');
 
-            var newHTML = '<div class="alert alert-success" id="alert" style="display:none">Your parameters have been saved.</div>';
+            let newHTML = '<div class="alert alert-success" id="alert" style="display:none">Your parameters have been saved.</div>';
             newHTML += template.replace('{T}', 'Script installed!').replace('{B}', '<p>Congratulations! SteamTrade Matcher\'s Userscript is up and running!</p>');
 
             newHTML += template.replace('{T}', 'Trade offer message').replace('{B}', '<p>Custom text that will be included automatically with your trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.</p><div><input type="text" name="trade-message" id="trade-message" class="form-control" value="' + g_s.MESSAGE + '"></div>');
@@ -1304,9 +1304,9 @@
         }
 
         // get classids from URL
-        var vars = getUrlVars();
+        let vars = getUrlVars();
 
-        var Cards = [
+        let Cards = [
             (vars.you
              ? vars.you.split(';')
              : []),
@@ -1326,14 +1326,14 @@
         }
 
         // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-        var oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+        let oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
         if (oldCookie) {
             oldCookie = oldCookie.split(';')[0];
         }
         document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
 
-        var Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-        var global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+        let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+        let global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
 
         window.setTimeout(checkContexts, 500, global_settings, global_vars);
 
