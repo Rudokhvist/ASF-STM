@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        ASF STM
+// @name        ASF STM DEV
 // @language    English
 // @namespace   https://greasyfork.org/users/2205
 // @description ASF bot list trade matcher
@@ -9,7 +9,8 @@
 // @include     http*://steamcommunity.com/id/*/badges/
 // @include     http*://steamcommunity.com/profiles/*/badges
 // @include     http*://steamcommunity.com/profiles/*/badges/
-// @version     2.9
+// @match       http*://steamcommunity.com/tradeoffer/new/*source=asfstm*
+// @version     3.0
 // @connect     asf.justarchi.net
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
@@ -20,7 +21,7 @@
     //configuration
     const weblimiter = 300;
     const errorLimiter = 30000;
-    const debug = false;
+    const debug = true;
     const maxErrors = 3;
     const botCacheTime = 5 * 60000;
     const filterBackgroundColor = 'rgba(23, 26, 33, 0.8)';//'rgba(103, 193, 245, 0.8)';
@@ -33,10 +34,6 @@
     let botBadges = [];
     let maxPages;
     let stop = false;
-    let classIdsDB = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM"));
-    if (classIdsDB === null) {
-        classIdsDB = new Object();
-    }
 
     function debugTime(name) {
         if (debug) {
@@ -109,164 +106,17 @@
         bar.setAttribute("style", "width: " + progress + "%;");
     }
 
-    function getClassIDs(index) {
-        updateMessage("Updating cards database for badge " + (index + 1) + " of " + myBadges.length);
-        debugPrint("getClassIDs for " + myBadges[index].appId);
-        for (let i = 0; i< myBadges[index].maxCards; i++) {
-            if (classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[i].item)) {
-                if (i == myBadges[index].maxCards-1) { //it's last card, so it means we have them all
-                    index++;
-                    if (index < myBadges.length) {
-                        getClassIDs(index);
-                    } else {
-                        debugPrint(JSON.stringify(classIdsDB));
-                        localStorage.setItem("Ryzhehvost.ASF.STM",JSON.stringify(classIdsDB));
-                        setTimeout(function() {
-                            GetCards(0, 0);
-                        }, weblimiter);
-                    }
-                    return;
-                }
-            } else {
-                break; //missing something, update needed
-            }
-        }
-        let searchUrl="https://steamcommunity.com/market/search/render/?start=0&count=30&search_descriptions=0&appid=753&category_753_Game[]=tag_app_"+myBadges[index].appId+"&category_753_cardborder[]=tag_cardborder_0&norender=1"
-        debugPrint(searchUrl);
-        let xhr = new XMLHttpRequest();
-        xhr.open("GET", searchUrl, true);
-        xhr.responseType = "json";
-        xhr.onload = function() { // eslint-disable-line
-            if (stop) {
-                updateMessage("Interrupted by user");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-            let status = xhr.status;
-            if (status === 200) {
-                let searchResponse = xhr.response;
-                debugPrint(JSON.stringify(searchResponse));
-                if (searchResponse.success == true && searchResponse.total_count >= myBadges[index].maxCards) {
-                    let results = searchResponse.results;
-                    for (let cardnumber=0; cardnumber < myBadges[index].maxCards; cardnumber++ ) {
-                        debugPrint("looking for card");
-                        debugPrint(myBadges[index].cards[cardnumber].item);
-                        for (let i = 0; i < results.length; i++) {
-                            debugPrint(results[i].name);
-                            if (results[i].name.trim().startsWith(myBadges[index].cards[cardnumber].item) ||
-                                (myBadges[index].cards[cardnumber].iconUrl.includes(results[i].asset_description.icon_url))) {
-                                debugPrint("found!");
-                                let classid = results[i].asset_description.classid;
-                                if (classIdsDB[myBadges[index].appId] === undefined) {
-                                    classIdsDB[myBadges[index].appId] = new Object();
-                                }
-                                let cardsClasses = classIdsDB[myBadges[index].appId];
-                                cardsClasses[myBadges[index].cards[cardnumber].item] = classid;
-                                break;
-                            }
-                        }
-                        if (!(classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[cardnumber].item))) {
-                             //still not found...
-                            updateMessage("Error getting classid for card \"" + myBadges[index].cards[cardnumber].item + "\" from "+ myBadges[index].appId + ", please report this!");
-                            hideThrobber();
-                            enableButton();
-                            let stopButton = document.getElementById("asf_stm_stop");
-                            stopButton.remove();
-                            return;
-                        }
-                    }
-                } else {
-                    updateMessage("Error getting card data for "+ myBadges[index].appId + ", please report this!");
-                    hideThrobber();
-                    enableButton();
-                    let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
-                    return;
-                }
-
-                errors = 0;
-                index++;
-                if (index < myBadges.length) {
-                    setTimeout((function(index) {
-                        return function() {
-                            getClassIDs(index);
-                        };
-                    })(index), weblimiter+errorLimiter*errors);
-                } else {
-                    debugPrint(JSON.stringify(classIdsDB));
-                    localStorage.setItem("Ryzhehvost.ASF.STM",JSON.stringify(classIdsDB));
-                    setTimeout(function() {
-                        GetCards(0, 0);
-                    }, weblimiter);
-                }
-                return;
-            } else {
-                errors++;
-            }
-            if ((status < 400 || status >= 500) && (errors <= maxErrors)) {
-                setTimeout((function(index) {
-                    return function() {
-                        getClassIDs(index);
-                    };
-                })(index), weblimiter+errorLimiter*errors);
-            } else {
-                if (status != 200) {
-                    updateMessage("Error getting classid, ERROR " + status);
-                } else {
-                    updateMessage("Error getting classid, malformed json");
-                }
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-            return;
-            }
-
-        };
-        xhr.onerror = function() { // eslint-disable-line
-            if (stop) {
-                updateMessage("Interrupted by user");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-            errors++;
-            if (errors <= maxErrors) {
-                setTimeout((function(index) {
-                    return function() {
-                        getClassIDs(index);
-                    };
-                })(index), weblimiter+errorLimiter*errors);
-                return;
-            } else {
-                debugPrint("error");
-                updateMessage("Error getting classid");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-        };
-        xhr.send();
-    }
-
     function populateCards(item) {
-        let classList = "";
+        let nameList = "";
         let htmlCards = "";
         for (let j = 0; j < item.cards.length; j++) {
-            let itemIcon = item.cards[j].iconUrl+"/98x115";
-            let itemName = item.cards[j].item.substring(item.cards[j].item.indexOf("-") + 1);
+            let itemIcon = item.cards[j].iconUrl; //+"/98x115";
+            let itemName = item.cards[j].item; //.substring(item.cards[j].item.indexOf("-") + 1);
             for (let k = 0; k < item.cards[j].count; k++) {
-                if (classList != "") {
-                    classList += ";";
+                if (nameList != "") {
+                    nameList += ";";
                 }
-                classList += classIdsDB[item.appId][item.cards[j].item];
+                nameList += encodeURIComponent(item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) + "." + item.appId + "-" + item.cards[j].item);
                 let cardTemplate = `
                           <div class="showcase_slot">
                             <img class="image-container" src="${itemIcon}/98x115">
@@ -278,21 +128,21 @@
         }
         return {
             "htmlCards": htmlCards,
-            "classList": classList
+            "nameList": nameList
         };
     }
 
-    function getClasses(item) {
-        let classes = "";
+    function getNames(item) {
+        let names = "";
         for (let j = 0; j < item.cards.length; j++) {
             for (let k = 0; k < item.cards[j].count; k++) {
-                if (classes != "") {
-                    classes += ";";
+                if (names != "") {
+                    names += ";";
                 }
-                classes += classIdsDB[item.appId][item.cards[j].item];
+                names += encodeURIComponent(item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) + "." + item.appId + "-" + item.cards[j].item);
             }
         }
-        return classes;
+        return names;
     }
 
     function updateTrade(row) {
@@ -309,11 +159,11 @@
                 if (you != "") {
                     you += ";";
                 }
-                you = you + getClasses(bots.Result[index].itemsToSend[i]);
+                you = you + getNames(bots.Result[index].itemsToSend[i]);
                 if (them != "") {
                     them += ";";
                 }
-                them = them + getClasses(bots.Result[index].itemsToReceive[i]);
+                them = them + getNames(bots.Result[index].itemsToReceive[i]);
             }
         }
         splitUrl[3] = "them=" + them;
@@ -339,11 +189,11 @@
         }
     }
 
-    function addMatchRow(index, botname) {
+    function addMatchRow(index) {
         debugPrint("addMatchRow " + index);
         let itemsToSend = bots.Result[index].itemsToSend;
         let itemsToReceive = bots.Result[index].itemsToReceive;
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=stm";
+        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
         let globalYou = "";
         let globalThem = "";
         let matches = "";
@@ -379,7 +229,7 @@
             let sendResult = populateCards(itemsToSend[i]);
             let receiveResult = populateCards(itemToReceive);
 
-            let tradeUrlApp = tradeUrl + "&them=" + receiveResult.classList + "&you=" + sendResult.classList;
+            let tradeUrlApp = tradeUrl + "&them=" + receiveResult.nameList + "&you=" + sendResult.nameList;
 
             let matchTemplate = `
                   <div class="asf_stm_appid_${appId}" style="display:${display}">
@@ -409,7 +259,7 @@
                       </div>
                       <div class="showcase_slot profile_header">
                           <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_online badge_info_title badge_row_overlay ellipsis" style="height: 15px;">
-                            ${botname}
+                            ${bots.Result[index].Nickname}
                           </div>
                         ${receiveResult.htmlCards}
                       </div>
@@ -421,11 +271,11 @@
                 if (globalYou != "") {
                     globalYou += ";";
                 }
-                globalYou += sendResult.classList;
+                globalYou += sendResult.nameList;
                 if (globalThem != "") {
                     globalThem += ";";
                 }
-                globalThem += receiveResult.classList;
+                globalThem += receiveResult.nameList;
             }
         }
         let tradeUrlFull = tradeUrl + "&them=" + globalThem + "&you=" + globalYou;
@@ -448,7 +298,7 @@
                      </div>
                   </div>
                   <div class="badge_title">
-                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${botname}</a>${any}
+                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${bots.Result[index].Nickname}</a>${any}
                     &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalInventoryCount} items)</span>
                   </div>
                 </div>
@@ -520,20 +370,18 @@
                                     let itemToSend = {
                                         "item": myBadge.cards[k].item,
                                         "count": 1,
-                                        "class": classIdsDB[myBadge.appId][myBadge.cards[k].item],
                                         "iconUrl": myBadge.cards[k].iconUrl
                                     };
                                     let itemToReceive = {
                                         "item": theirBadge.cards[j].item,
                                         "count": 1,
-                                        "class": classIdsDB[theirBadge.appId][theirBadge.cards[j].item],
                                         "iconUrl": theirBadge.cards[j].iconUrl
                                     };
                                     //fill items to send
-                                    let sendmatch = itemsToSend.find(item => item.appId == myBadges[i].appId);
+                                    let sendmatch = itemsToSend.find(item => item.appId == myBadge.appId);
                                     if (sendmatch == undefined) {
                                         let newMatch = {
-                                            "appId": myBadges[i].appId,
+                                            "appId": myBadge.appId,
                                             "title": myBadge.title,
                                             "cards": [itemToSend]
                                         };
@@ -595,7 +443,7 @@
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
             //getUsername(index, callback);
-            addMatchRow(index, bots.Result[index].Nickname);
+            addMatchRow(index);
             callback();
         } else {
             debugPrint("no matches");
@@ -763,7 +611,7 @@
                 return;
             } else {
                 myBadges = deepClone(botBadges);
-                getClassIDs(0);
+                GetCards(0, 0);
                 return;
             }
         } else {
@@ -1120,7 +968,8 @@
             }
         });
     }
-
+//Main
+    localStorage.removeItem("Ryzhehvost.ASF.STM") //we used to store classid database here before, clean this up.
     if (document.getElementsByClassName("badge_details_set_favorite").length != 0) {
         let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
         let result = profileRegex.exec(document.location);
@@ -1154,5 +1003,272 @@
         let anchor = document.getElementsByClassName("profile_small_header_texture")[0];
         anchor.appendChild(buttonDiv);
         enableButton();
+    } else {
+        //All code below is a modified version of SteamTrade Matcher Userscript by Tithen-Firion
+        //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
+
+
+        // MIT License
+
+        // Copyright (c) 2017 Tithen-Firion
+
+        // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+        // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+        // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+        function getRandomInt(min, max) {
+            "use strict";
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        function mySort(a, b) {
+            "use strict";
+            return parseInt(b.id) - parseInt(a.id);
+        }
+
+        ///// Steam functions /////
+
+        function restoreCookie(oldCookie) {
+            "use strict";
+            if (oldCookie) {
+                var now = new Date();
+                var time = now.getTime();
+                time += 15 * 24 * 60 * 60 * 1000;
+                now.setTime(time);
+                document.cookie = 'strTradeLastInventoryContext=' + oldCookie + '; expires=' + now.toUTCString() + '; path=/tradeoffer/';
+            }
+        }
+
+        function addCards(g_s, g_v) {
+            "use strict";
+            var tmpCards, inv, index, currentCards;
+            var failLater = false;
+            var cardTypes = [[], []];
+            g_v.Cards.forEach(function (requestedCards, i) {
+                tmpCards = {};
+                inv = g_v.Users[i].rgContexts[753][6].inventory;
+                inv.BuildInventoryDisplayElements();
+                inv = inv.rgInventory;
+                Object.keys(inv).forEach(function (item) {
+                    // add all matching cards to temporary dict
+                    console.log(requestedCards);
+                    index = requestedCards.indexOf(inv[item].classid);
+                    if (index > -1) {
+                        if (tmpCards[inv[item].classid] === undefined) {
+                            tmpCards[inv[item].classid] = [];
+                        }
+                        tmpCards[inv[item].classid].push({type: inv[item].type, element: inv[item].element, id: inv[item].id});
+                    }
+                });
+                if (g_s.ORDER === 'SORT') {
+                    // sort cards descending by card id for each classid
+                    Object.keys(tmpCards).forEach(function (classid) {
+                        tmpCards[classid].sort(mySort);
+                    });
+                }
+                // add cards to trade in order given by STM
+                requestedCards.forEach(function (classid) {
+                    currentCards = tmpCards[classid] || []; // all cards from inventory with requested classid
+                    if (currentCards.length === 0) {
+                        failLater = true;
+                    } else {
+                        index = 0;
+                        if (g_s.ORDER === 'RANDOM') {
+                            // randomize index
+                            index = getRandomInt(0, currentCards.length);
+                        }
+                        unsafeWindow.MoveItemToTrade(currentCards[index].element);
+                        cardTypes[i].push(currentCards[index].type);
+                        currentCards.splice(index, 1);
+                    }
+                });
+            });
+
+            if(failLater || document.querySelectorAll('#your_slots .has_item').length != document.querySelectorAll('#their_slots .has_item').length) {
+                unsafeWindow.ShowAlertDialog('Items missing', 'Some items are missing and were not added to trade offer. Script aborting.');
+                throw ('Cards missing');
+            }
+
+            // check if item types match
+            cardTypes[1].forEach(function (type) {
+                index = cardTypes[0].indexOf(type);
+                if (index > -1) {
+                    cardTypes[0].splice(index, 1);
+                } else {
+                    unsafeWindow.ShowAlertDialog('Not 1:1 trade', 'This is not a valid 1:1 trade. Script aborting.');
+                    throw ('Not 1:1 trade');
+                }
+            });
+            restoreCookie(g_v.oldCookie);
+            // inject some JS to do something after trade offer is sent
+            if (g_s.DO_AFTER_TRADE !== 'NOTHING') {
+                var functionToInject = 'var DO_AFTER_TRADE = "' + g_s.DO_AFTER_TRADE + '";';
+                functionToInject += '$J(document).ajaxSuccess(function (event, xhr, settings) {';
+                functionToInject += 'if (settings.url === "https://steamcommunity.com/tradeoffer/new/send") {';
+                functionToInject += 'if (DO_AFTER_TRADE === "CLOSE_WINDOW") { window.close();';
+                functionToInject += '} else if (DO_AFTER_TRADE === "CLICK_OK") {';
+                functionToInject += 'document.querySelector("div.newmodal_buttons > div").click(); } } });';
+                var script = document.createElement('script');
+                script.appendChild(document.createTextNode(functionToInject));
+                document.body.appendChild(script);
+            }
+            // send trade offer
+            if (g_s.AUTO_SEND) {
+                unsafeWindow.ToggleReady(true);
+                unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
+            }
+        }
+
+        function checkContexts(g_s, g_v) {
+            "use strict";
+            var ready = 0;
+            // check if Steam loaded everything needed
+            g_v.Users.forEach(function (user) {
+                if (user.rgContexts && user.rgContexts[753] && user.rgContexts[753][6]) {
+                    if (user.cLoadsInFlight === 0) {
+                        if (user.rgContexts[753][6].inventory) {
+                            ready += 1;
+                        } else {
+                            unsafeWindow.document.getElementById('trade_inventory_unavailable').show();
+                            unsafeWindow.document.getElementById('trade_inventory_pending').show();
+                            user.loadInventory(753, 6);
+                        }
+                    }
+                }
+            });
+
+            if (ready === 2) {
+                // select your inventory
+                unsafeWindow.TradePageSelectInventory(g_v.Users[0], 753, "6");
+                // set trade offer message
+                document.getElementById('trade_offer_note').value = g_s.MESSAGE;
+                try {
+                    addCards(g_s, g_v);
+                } catch (e) {
+                    // no matter what happens, restore old cookie
+                    restoreCookie(g_v.oldCookie);
+                    console.log(e);
+                }
+            } else {
+                window.setTimeout(checkContexts, 500, g_s, g_v);
+            }
+        }
+
+        function getUrlVars() {
+            "use strict";
+            var vars = [];
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            hashes.forEach(function (hash) {
+                hash = hash.split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            });
+            return vars;
+        }
+
+
+        ///// STM functions /////
+
+        async function restoreDefaultSettings() {
+            if (window.confirm('Are you sure you want to restore default settings?')) {
+                localStorage.removeItem("Ryzhehvost.ASF.STM.Settings")
+                    document.location.reload();
+            }
+        }
+
+        function saveSettings() {
+            global_settings.MESSAGE = document.getElementById('trade-message').value;
+            global_settings.DO_AFTER_TRADE = document.getElementById('after-trade').value
+            global_settings.ORDER = document.getElementById('cards-order').value;
+            global_settings.AUTO_SEND = document.getElementById('auto-send').checked;
+            localStorage.setItem("Ryzhehvost.ASF.STM.Settings",JSON.stringify())
+            document.getElementById('alert').style.display = 'block';
+            window.scroll(0, 0);
+        }
+
+        function ParseCards(vars) {
+           let elements = vars.split(';');
+           elements.forEach(function(element) {
+               let decodedVar = decodeURIComponent(element)
+           })
+        }
+
+        function prepareSettings(g_s) { //!!! TODO
+            "use strict";
+            var template = '<div class="panel panel-default"><div class="panel-heading">' +
+                '<h3 class="panel-title">{T}</h3></div><div class="panel-body">{B}</div></div>';
+            var content = document.getElementById('content');
+
+            var newHTML = '<div class="alert alert-success" id="alert" style="display:none">Your parameters have been saved.</div>';
+            newHTML += template.replace('{T}', 'Script installed!').replace('{B}', '<p>Congratulations! SteamTrade Matcher\'s Userscript is up and running!</p>');
+
+            newHTML += template.replace('{T}', 'Trade offer message').replace('{B}', '<p>Custom text that will be included automatically with your trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.</p><div><input type="text" name="trade-message" id="trade-message" class="form-control" value="' + g_s.MESSAGE + '"></div>');
+
+            newHTML += template.replace('{T}', 'Action after trade').replace('{B}', '<p>Determines what happens when you complete a trade offer.</p><ul><li><strong>Do nothing</strong>: Will do nothing more than the normal behavior.</li><li><strong>Close window</strong>: Will close the window after the trade offer is sent.</li><li><strong>Click OK</strong>: Will redirect you to the trade offers recap page.</li></ul><div class="option-block"><label for="after-trade">After trade...</label><select class="form-control" name="after-trade" id="after-trade"><option value="NOTHING">Do Nothing</option><option value="CLOSE_WINDOW">Close window</option><option value="CLICK_OK">Click OK</option></select></div>').replace(g_s.DO_AFTER_TRADE, g_s.DO_AFTER_TRADE + '" selected="');
+
+            newHTML += template.replace('{T}', 'Cards order').replace('{B}', '<p>Determines which card is added to trade.</p><ul><li><strong>Sorted</strong>: Will sort cards by their IDs before adding to trade. If you make several trade offers with the same card and one of them is accepted, the rest will have message "cards unavilable to trade".</li><li><strong>Random</strong>: Will add cards to trade randomly. If you make several trade offers and one of them is accepted, only some of them will be unavilable for trade.</li><li><strong>As is</strong>: Script doesn\'t change anything in order. Results vary depending on browser, steam servers, weather...</li></ul><div class="option-block"><label for="cards-order">Cards order</label><select class="form-control" name="cards-order" id="cards-order"><option value="SORT">Sorted</option><option value="RANDOM">Random</option><option value="AS_IS">As is</option></select></div>').replace(g_s.ORDER, g_s.ORDER + '" selected="');
+
+            newHTML += template.replace('{T}', 'Update users\' escrow status').replace('{B}', '<p>Help STM by sending escrow status of users you are trading with.</p><div class="checkbox"><label for="check-escrow"><input name="check-escrow" id="check-escrow" value="1" type="checkbox"' + (g_s.CHECK_ESCROW
+        ? ' checked="checked"'
+        : '') + '> Enable</label></div>');
+
+            newHTML += template.replace('{T}', 'Auto-send trade offer').replace('{B}', '<p>Makes it possible for the script to automatically send trade offers without any action on your side. This is not recommended as you should always check your trade offers, but, well, this is a possible thing. Please note that incomplete trade offers (missing cards, ...) won\'t be sent automatically even when this parameter is set to true.</p><div class="checkbox"><label for="auto-send"><input name="auto-send" id="auto-send" value="1" type="checkbox"' + (g_s.AUTO_SEND
+        ? ' checked="checked"'
+        : '') + '> Enable</label></div>');
+
+            newHTML += '<div id="save" style="margin-bottom:20px"><input class="btn btn-default btn-block" id="save-button" value="Save" type="submit"></div>';
+            newHTML += '<div id="restore" style="margin-bottom:20px"><input class="btn btn-default btn-block" id="restore-button" value="Restore default settings" type="submit"></div>';
+
+            content.innerHTML = newHTML + content.innerHTML;
+            document.getElementById('save').addEventListener("click", saveSettings, false);
+            document.getElementById('restore').addEventListener("click", restoreDefaultSettings, false);
+        }
+
+
+        let global_settings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
+        if (global_settings === null) {
+            global_settings = new Object();
+            global_settings.MESSAGE = 'ASF STM Matcher';
+            global_settings.AUTO_SEND = false;
+            global_settings.DO_AFTER_TRADE = 'NOTHING';
+            global_settings.ORDER = 'AS_IS';
+        }
+
+        // get classids from URL
+        var vars = getUrlVars();
+
+        var Cards = [
+            (vars.you
+             ? vars.you.split(';')
+             : []),
+            (vars.them
+             ? vars.them.split(';')
+             : [])
+        ];
+
+        if (Cards[0].length !== Cards[1].length) {
+            unsafeWindow.ShowAlertDialog(
+                'Different items amount',
+                'You\'ve requested ' + (Cards[0].length > Cards[1].length
+                                        ? 'less'
+                                        : 'more') + ' items than you give. Script aborting.'
+            );
+            throw ('Different items amount on both sides');
+        }
+
+        // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+        var oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+        if (oldCookie) {
+            oldCookie = oldCookie.split(';')[0];
+        }
+        document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
+
+        var Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+        var global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+
+        window.setTimeout(checkContexts, 500, global_settings, global_vars);
+
     }
 })();
