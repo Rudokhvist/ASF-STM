@@ -9,6 +9,7 @@
 // @match           *://steamcommunity.com/id/*/badges/
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
+// @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
 // @version         3.0
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
@@ -19,6 +20,7 @@
 (function () {
     "use strict";
     //configuration
+    //TODO: make configuration configurable
     const weblimiter = 300;
     const errorLimiter = 30000;
     const debug = true;
@@ -117,6 +119,15 @@
     function populateCards(item) {
         let nameList = "";
         let htmlCards = "";
+        //TODO! Check for same hash but different name, ask user to report
+        for (let j = 0; j < item.cards.length; j++) {
+            for (let i = 0; j < item.cards.length; i++) {
+                if (i != j && item.cards[i].name != item.cards[j].name &&
+                   item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) == item.cards[i].iconUrl.substring(item.cards[i].iconUrl.length - 5)) {
+                    unsafeWindow.ShowAlertDialog('WARNING', 'Different cards have same signature, please report this: ' + item.appId);
+                }
+            }
+        }
         for (let j = 0; j < item.cards.length; j++) {
             let itemIcon = item.cards[j].iconUrl; //+"/98x115";
             let itemName = item.cards[j].item; //.substring(item.cards[j].item.indexOf("-") + 1);
@@ -1120,24 +1131,26 @@
                 inv = inv.rgInventory;
                 Object.keys(inv).forEach(function (item) {
                     // add all matching cards to temporary dict
-                    console.log(requestedCards);
-                    index = requestedCards.indexOf(inv[item].classid);
+                    index = requestedCards.findIndex(function (elem) {
+                        return ((elem.appid == inv[item].market_fee_app) && ((elem.name === inv[item].name) || inv[item].icon_url.endsWith(elem.hash)));
+                    });
                     if (index > -1) {
-                        if (tmpCards[inv[item].classid] === undefined) {
-                            tmpCards[inv[item].classid] = [];
+                        console.log(requestedCards[index].id);
+                        if (tmpCards[requestedCards[index].id] === undefined) {
+                            tmpCards[requestedCards[index].id] = [];
                         }
-                        tmpCards[inv[item].classid].push({type: inv[item].type, element: inv[item].element, id: inv[item].id});
+                        tmpCards[requestedCards[index].id].push({type: inv[item].type, element: inv[item].element, id: inv[item].id});
                     }
                 });
                 if (g_s.ORDER === 'SORT') {
-                    // sort cards descending by card id for each classid
-                    Object.keys(tmpCards).forEach(function (classid) {
-                        tmpCards[classid].sort(mySort);
+                    // sort cards descending by card id for each type
+                    Object.keys(tmpCards).forEach(function (id) {
+                        tmpCards[id].sort(mySort);
                     });
                 }
                 // add cards to trade in order given by STM
-                requestedCards.forEach(function (classid) {
-                    currentCards = tmpCards[classid] || []; // all cards from inventory with requested classid
+                requestedCards.forEach(function (elem) {
+                    currentCards = tmpCards[elem.id] || []; // all cards from inventory with requested signature
                     if (currentCards.length === 0) {
                         failLater = true;
                     } else {
@@ -1255,11 +1268,24 @@
             window.scroll(0, 0);
         }
 
-        function ParseCards(vars) {
-           let elements = vars.split(';');
-           elements.forEach(function(element) {
-               let decodedVar = decodeURIComponent(element)
-           })
+        function ParseCard(card) {
+            let decodedVar = decodeURIComponent(card);
+            const re = new RegExp("(.{5})\.([0-9]+)\-(.*)");
+            let result = decodedVar.match(re);
+            if (result && result.length == 4) {
+                return {
+                    id:card,
+                    appid:result[2],
+                    name: result[3],
+                    hash: result[1]
+                }
+            } else {
+                console.log(decodedVar);
+                console.log(result);
+                console.log(result.length);
+                unsafeWindow.ShowAlertDialog('ASF STM Error', 'Failed to parse vars, please report it!');
+                throw ('Failed to parse');
+            }
         }
 
         function prepareSettings(g_s) { //!!! TODO
@@ -1303,15 +1329,15 @@
             global_settings.ORDER = 'AS_IS';
         }
 
-        // get classids from URL
+        // get cards data from URL
         let vars = getUrlVars();
 
         let Cards = [
             (vars.you
-             ? vars.you.split(';')
+             ? vars.you.split(';').map(elem => ParseCard(elem))
              : []),
             (vars.them
-             ? vars.them.split(';')
+             ? vars.them.split(';').map(elem => ParseCard(elem))
              : [])
         ];
 
