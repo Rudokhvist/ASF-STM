@@ -1135,7 +1135,6 @@
                         return ((elem.appid == inv[item].market_fee_app) && ((elem.name === inv[item].name) || inv[item].icon_url.endsWith(elem.hash)));
                     });
                     if (index > -1) {
-                        console.log(requestedCards[index].id);
                         if (tmpCards[requestedCards[index].id] === undefined) {
                             tmpCards[requestedCards[index].id] = [];
                         }
@@ -1280,9 +1279,6 @@
                     hash: result[1]
                 }
             } else {
-                console.log(decodedVar);
-                console.log(result);
-                console.log(result.length);
                 unsafeWindow.ShowAlertDialog('ASF STM Error', 'Failed to parse vars, please report it!');
                 throw ('Failed to parse');
             }
@@ -1319,49 +1315,53 @@
             document.getElementById('restore').addEventListener("click", restoreDefaultSettings, false);
         }
 
+        try {
 
-        let global_settings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
-        if (global_settings === null) {
-            global_settings = new Object();
-            global_settings.MESSAGE = 'ASF STM Matcher';
-            global_settings.AUTO_SEND = false;
-            global_settings.DO_AFTER_TRADE = 'NOTHING';
-            global_settings.ORDER = 'AS_IS';
-        }
+            let global_settings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
+            if (global_settings === null) {
+                global_settings = new Object();
+                global_settings.MESSAGE = 'ASF STM Matcher';
+                global_settings.AUTO_SEND = false;
+                global_settings.DO_AFTER_TRADE = 'NOTHING';
+                global_settings.ORDER = 'AS_IS';
+            }
 
         // get cards data from URL
-        let vars = getUrlVars();
 
-        let Cards = [
-            (vars.you
-             ? vars.you.split(';').map(elem => ParseCard(elem))
-             : []),
-            (vars.them
-             ? vars.them.split(';').map(elem => ParseCard(elem))
-             : [])
-        ];
+            let vars = getUrlVars();
 
-        if (Cards[0].length !== Cards[1].length) {
-            unsafeWindow.ShowAlertDialog(
-                'Different items amount',
-                'You\'ve requested ' + (Cards[0].length > Cards[1].length
-                                        ? 'less'
-                                        : 'more') + ' items than you give. Script aborting.'
-            );
-            throw ('Different items amount on both sides');
+            let Cards = [
+                (vars.you
+                 ? vars.you.split(';').map(elem => ParseCard(elem))
+                 : []),
+                (vars.them
+                 ? vars.them.split(';').map(elem => ParseCard(elem))
+                 : [])
+            ];
+
+            if (Cards[0].length !== Cards[1].length) {
+                unsafeWindow.ShowAlertDialog(
+                    'Different items amount',
+                    'You\'ve requested ' + (Cards[0].length > Cards[1].length
+                                            ? 'less'
+                                            : 'more') + ' items than you give. Script aborting.'
+                );
+                throw ('Different items amount on both sides');
+            }
+
+            // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+            let oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+            if (oldCookie) {
+                oldCookie = oldCookie.split(';')[0];
+            }
+            document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
+
+            let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+            let global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+
+            window.setTimeout(checkContexts, 500, global_settings, global_vars);
+        } catch (e) {
+            console.log(e);
         }
-
-        // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-        let oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
-        if (oldCookie) {
-            oldCookie = oldCookie.split(';')[0];
-        }
-        document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
-
-        let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-        let global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
-
-        window.setTimeout(checkContexts, 500, global_settings, global_vars);
-
     }
 })();
