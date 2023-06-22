@@ -19,24 +19,7 @@
 
 (function () {
     "use strict";
-    //configuration
-    //TODO: make configuration configurable
-    const weblimiter = 300;
-    const errorLimiter = 30000;
-    const debug = true;
-    const maxErrors = 3;
-    const botCacheTime = 5 * 60000;
-    const filterBackgroundColor = "rgba(23, 26, 33, 0.8)"; //"rgba(103, 193, 245, 0.8)";
 
-    //styles
-    const css = `
-    #asf_stm_filters_body {
-        max-height: calc(100vh - 95px);
-        overflow-y: auto;
-    }
-    `;
-
-    //do not change
     let myProfileLink = "";
     let errors = 0;
     let bots = null;
@@ -44,21 +27,93 @@
     let botBadges = [];
     let maxPages;
     let stop = false;
+    let botCacheTime = 5 * 60000;
+    let globalSettings = null;
+    let blacklist = [];
+    let defaultSettings = {
+        anyBots:true,
+        fairBots:true,
+        sortByName: true,
+        sortBotsBy: ["MatchEverythingFirst","TotalGamesCountDesc","TotalItemsCountDesc","TotalInventoryCountAsc", "None"],
+        botMinItems: 0,
+        botMaxItems: 0,
+        weblimiter:300,
+        errorLimiter:30000,
+        debug:true,
+        maxErrors:3,
+        filterBackgroundColor:"rgba(23,26,33,0.8)",
+        // for trade offer
+        tradeMessage:'ASF STM Matcher',
+        autoSend:false,
+        doAfterTrade:'NOTHING',
+        order:'AS_IS',
+    };
+
+    //styles
+    const css = `
+    #asf_stm_filters_body {
+        max-height: calc(100vh - 95px);
+        overflow-y: auto;
+    }
+    .asf_stm_tabs{
+        width: 600px;
+        display: block;
+        margin: 40px auto;
+        position: relative;
+    }
+    .asf_stm_tabs .asf_stm_tab{
+        float: left;
+        display: block;
+    }
+    .asf_stm_tabs .asf_stm_tab>input[type="radio"] {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    .asf_stm_tabs .asf_stm_tab>label {
+        display: block;
+        padding: 6px 21px;
+        cursor: pointer;
+        position: relative;
+        color: #FFF;
+        background: #4A83FD;
+    }
+    .asf_stm_tabs .asf_stm_content {
+        display: none;
+        overflow: hidden;
+        width: 630px;
+        height: 380px;
+        padding: 5px;
+        position: absolute;
+        top: 27px;
+        left: 0;
+        background: #303030;
+        color: #DFDFDF;
+    }
+    .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked + label {
+        top: 0;
+        background: #303030;
+        color: #F5F5F5;
+    }
+    .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked ~ [id^="asf_stm_tab-content"] {
+        display: block;
+    }
+    `;
 
     function debugTime(name) {
-        if (debug) {
+        if (globalSettings.debug) {
             console.time(name);
         }
     }
 
     function debugTimeEnd(name) {
-        if (debug) {
+        if (globalSettings.debug) {
             console.timeEnd(name);
         }
     }
 
     function debugPrint(msg) {
-        if (debug) {
+        if (globalSettings.debug) {
             console.log(new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 }) + " : " + msg);
         }
     }
@@ -77,6 +132,345 @@
             }
             return result;
         }
+    }
+
+    function arrayToText(array) {
+        return array.join(",\n");
+    }
+
+    function textToArray(text) {
+        let res = [];
+        text.split(",").forEach(function(elem) {
+            if (/^\d+$/.test(elem.trim())) {
+                res.push(elem.trim());
+            }
+        });
+       return res;
+    }
+
+    function hexToRgba(hex) {
+        return 'rgba('+[Number("0x"+hex.substring(1,3)), Number("0x"+hex.substring(3,5)), Number("0x"+hex.substring(5,7))].join(',')+',1)';
+    }
+
+    function rgbaToHex(rgba) {
+        let re=/rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
+        let result = re.exec(rgba);
+        if (result === null || result.length != 5) {
+            debugPrint("failed to parse color!");
+            return ["#171a21",0.8];
+        }
+        return ["#"+Number(result[1]).toString(16)+Number(result[2]).toString(16)+Number(result[3]).toString(16),Number(result[4])];
+    }
+
+    function mixAlpha(rgba,alpha) {
+        let re = /(rgba\([.\d]+,[.\d]+,[.\d]+,)([.\d]+)\)/g;
+        let result = re.exec(rgba);
+        if (result) {
+            return result[1]+alpha+")";
+        }
+        debugPrint("failed to mix alpha!");
+        return rgba;
+    }
+
+    function ShowConfigDialog() { //!!! TODO
+        let filterBG = rgbaToHex(globalSettings.filterBackgroundColor);
+        let configDialogTemplate = `
+              <div style="height:420px; margin-top:-20px; font-size:12px;margin-left: -20px;width: 620px;" >
+              <ul style="margin: 0;padding: 0;" class="asf_stm_tabs">
+                <li class="asf_stm_tab">
+                  <input name="asf_stm_tabs" checked="checked"
+               id="asf_stm_tab1" type="radio"><label
+               for="asf_stm_tab1">Matcher</label>
+                  <div id="asf_stm_tab-content1" class="asf_stm_content">
+                  <fieldset style="padding-top: 0px;"><legend>BOTS TO MATCH</legend>
+                  <div style="margin-bottom: 6px;"> Match with "Any"
+              bots:&nbsp;<input style="background-color: #171d25; color: white;"
+               id="anyBots" ${globalSettings.anyBots ? "checked=\"checked\"" : ""} type="checkbox">&nbsp;Match
+              with "Fair"
+              bots:&nbsp;<input style="background-color: #171d25; color: white;"
+               id="fairBots" ${globalSettings.fairBots ? "checked=\"checked\"" : ""} type="checkbox"><br>
+                  </div>
+                  <div style="margin-bottom: 6px;"> Minimum
+              items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
+               id="botMinItems" value=${globalSettings.botMinItems} type="number">&nbsp;Maximum
+              items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
+               id="botMaxItems" value=${globalSettings.botMaxItems} type="number"><a class="tooltip hover_tooltip" data-tooltip-text="Don't match with bots
+               that has less or more than required limit of items in steam inventory. 0 means no limit on number of items">
+              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  <br>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                  <span style="width: 80px; display: inline-block;">Sort bots by:</span>
+                  <select style="background-color: #171d25; color: white;"
+               id="sortBotsBy0">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[0]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[0]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[0]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  <div style="margin-bottom: 6px;"><span
+               style="width: 80px; display: inline-block;"> …then by:</span>
+                  <select style="background-color: #171d25; color: white;" id="sortBotsBy1">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[1]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[1]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[1]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  <div style="margin-bottom: 6px;"><span
+               style="width: 80px; display: inline-block;">…then by:</span>
+                  <select style="background-color: #171d25; color: white;"
+               id="sortBotsBy2">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[2]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[2]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[2]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  <div style="margin-bottom: 6px;"><span
+               style="width: 80px; display: inline-block;">…then by:</span>
+                  <select style="background-color: #171d25; color: white;"
+               id="sortBotsBy3">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[3]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[3]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[3]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  </fieldset>
+                  <fieldset style="padding-top: 0px;"><legend>INTERFACE</legend>
+                  <div style="margin-bottom: 6px;"> Game filter pop-up
+              background color:&nbsp;<input
+               style="background-color: #171d25; color: white; height: 20px; padding: 2px;"
+               id="filterBackgroundColor" value="${filterBG[0]}" type="color">&nbsp;opacity:&nbsp;<input
+               style="height: 4px;"
+               id="filterBackgroundAlpha" min=0 max=1
+               step=0.01 value=${filterBG[1]} type="range"><br>
+                  </div>
+                  <div style="margin-bottom: 6px;"> Sort results by game
+              name:&nbsp;<input
+               style="border: medium none transparent; background-color: #171d25; color: white;"
+               id="sortByName" ${globalSettings.sortByName ? "checked=\"checked\"" : ""} type="checkbox">
+                  </div>
+                  </fieldset>
+                  <fieldset style="padding-top: 0px;"><legend>SETTINGS</legend>
+                    <fieldset style="padding-top: 0px; float: right; width:200px;"><legend>DEVELOPER</legend>
+                                    <div style="margin-bottom: 6px;">Debug:&nbsp;
+                                    <input style="background-color: #171d25; color: white;"
+                                    id="debug" type="checkbox"  ${globalSettings.debug ? "checked=\"checked\"" : ""} >
+                                     <a class="tooltip hover_tooltip" data-tooltip-text="Enable additional output to console">
+                                     <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                                    </div>
+                    </fieldset>
+                  <div style="margin-bottom: 6px;"> Web limiter delay,
+              ms:&nbsp;<input class="price_option_input"
+               style="border: medium none transparent; background-color: #171d25; color: white;"
+               id="weblimiter" value= ${globalSettings.weblimiter}  min=0 type="number"></div>
+                  <div style="margin-bottom: 6px;"> Delay on error,
+              ms:&nbsp;<input class="price_option_input"
+               style="background-color: #171d25; color: white;"
+               id="errorLimiter" value=${globalSettings.errorLimiter} min=0 type="number"></div>
+                  <div style="margin-bottom: 6px;"> Max errors:&nbsp;<input
+               class="price_option_input"
+               style="background-color: #171d25; color: white;"
+               id="maxErrors" value=${globalSettings.maxErrors} min=0 type="number"></div>
+                  </div>
+                  </fieldset>
+                </li>
+                <li class="asf_stm_tab">
+                  <input name="asf_stm_tabs" id="asf_stm_tab2"
+               type="radio"><label for="asf_stm_tab2">Trade
+              helper</label>
+                  <div id="asf_stm_tab-content2" class="asf_stm_content">
+                  <br>
+                  <fieldset><legend>TRADE OFFER MESSAGE</legend>
+                  <input style="background-color: #171d25; color: white;" name="trade-message" id="tradeMessage" value="${globalSettings.tradeMessage}" type="text">
+                  <a class="tooltip hover_tooltip" data-tooltip-text="Custom text that will be included automatically with your
+              trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.">
+              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  <br>
+                  <fieldset><legend>ACTION AFTER TRADE
+                  </legend>
+                  <label for="after-trade">After
+              trade...</label>
+                  <select style="background-color: #171d25; color: white;" name="after-trade" id="doAfterTrade">
+                  <option value="NOTHING" ${globalSettings.doAfterTrade == "NOTHING" ? "selected=\"selected\"" : ""}>Do
+              Nothing</option>
+                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade == "CLOSE_WINDOW" ? "selected=\"selected\"" : ""}>Close window</option>
+                  <option value="CLICK_OK" ${globalSettings.doAfterTrade == "CLICK_OK" ? "selected=\"selected\"" : ""}>Click OK</option>
+                  </select>
+                  <a class="tooltip hover_tooltip" data-tooltip-html="
+                  <p>Determines what happens when you complete a trade offer.</p>
+                  <ul>
+                    <li><strong>Do nothing</strong>: Will do
+              nothing more than the normal behavior.</li>
+                    <li><strong>Close window</strong>: Will close
+              the window after the trade offer is sent.</li>
+                    <li><strong>Click OK</strong>: Will redirect
+              you to the trade offers recap page.</li>
+                  </ul>">
+                  <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  <br>
+                  <fieldset><legend>CARDS OFFER
+                  </legend>
+                  <label for="cards-order">Cards
+              order</label>
+                  <select style="background-color: #171d25; color: white;" class="form-control" name="cards-order"
+               id="order">
+                  <option value="SORT" ${globalSettings.order == "SORT" ? "selected=\"selected\"" : ""}>Sorted</option>
+                  <option value="RANDOM" ${globalSettings.order == "RANDOM" ? "selected=\"selected\"" : ""}>Random</option>
+                  <option value="AS_IS" ${globalSettings.order == "AS_IS" ? "selected=\"selected\"" : ""}>As is</option>
+                  </select>
+                   <a class="tooltip hover_tooltip" data-tooltip-html="
+                   <p>Determines which card is added to trade.</p>
+                  <ul>
+                    <li><strong>Sorted</strong>: Will sort cards by
+              their IDs before adding to trade. If you make several trade offers with
+              the same card and one of them is accepted, the rest will have message
+              &quot;cards unavilable to trade&quot;.</li>
+                    <li><strong>Random</strong>: Will add cards to
+              trade randomly. If you make several trade offers and one of them is
+              accepted, only some of them will be unavilable for trade.</li>
+                    <li><strong>As is</strong>: Script doesn't
+              change anything in order. Results vary depending on browser, steam
+              servers, weather...</li>
+                  </ul>">
+                  <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  <br>
+                  <fieldset><legend>AUTO-SEND TRADE OFFER
+                  </legend>
+                  <label for="auto-send"><input style="background-color: #171d25; color: white;" name="auto-send"
+               id="autoSend" value="1" type="checkbox" ${globalSettings.autoSend ? "checked=\"checked\"" : ""}>
+              Enable</label>
+                   <a class="tooltip hover_tooltip" data-tooltip-text="Makes it possible for the script to automatically send
+              trade offers without any action on your side. This is not recommended
+              as you should always check your trade offers, but, well, this is a
+              possible thing. Please note that incomplete trade offers (missing
+              cards, ...) won't be sent automatically even when this parameter is set
+              to true.">
+              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  </div>
+                </li>
+                <li class="asf_stm_tab">
+                  <input name="asf_stm_tabs" id="asf_stm_tab3"
+               type="radio"><label for="asf_stm_tab3">Blacklist</label>
+                  <div id="asf_stm_tab-content3" class="asf_stm_content">
+                  <div class="title_text profile_xp_block_remaining"><h1>Comma-separated list of ignored steamIDs</h1><div><div>
+                  <textarea style="background-color: #171d25; color: white;" id="blacklist" name="Blacklist" rows="17"
+               cols="63">${arrayToText(blacklist)}</textarea></div>
+                </li>
+              </ul>
+              </div>
+        `;
+        let templateElement = document.createElement("template");
+        templateElement.innerHTML = configDialogTemplate.trim();
+        let configDialog = templateElement.content.firstChild;
+
+        let dialog = unsafeWindow.ShowConfirmDialog('ASF STM Configuration', configDialog, "Save","Cancel","Reset").done(function(button) {
+            if (button === 'OK') {
+                //TODO:save settings
+                globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
+                globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
+                globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
+                globalSettings.sortBotsBy = ["MatchEverythingFirst","TotalGamesCountDesc","TotalItemsCountDesc","TotalInventoryCountAsc", "None"];
+                let newbotMinItems = Number(configDialog.querySelector("#botMinItems").value);
+                globalSettings.botMinItems = isNaN(newbotMinItems) ? globalSettings.botMinItems : newbotMinItems;
+                let newbotMaxItems = Number(configDialog.querySelector("#botMaxItems").value);
+                globalSettings.botMaxItems = isNaN(newbotMaxItems) ? globalSettings.botMaxItems : newbotMaxItems;
+                let newweblimiter = Number(configDialog.querySelector("#weblimiter").value);
+                globalSettings.weblimiter = isNaN(newweblimiter) ? globalSettings.weblimiter : newweblimiter;
+                let newerrorLimiter = Number(configDialog.querySelector("#errorLimiter").value);
+                globalSettings.errorLimiter = isNaN(newerrorLimiter) ? globalSettings.errorLimiter : newerrorLimiter;
+                globalSettings.debug = configDialog.querySelector("#debug").checked;
+                let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
+                globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
+                let newAlpha = Number(configDialog.querySelector("#filterBackgroundAlpha").value);
+                globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value),
+                                                                configDialog.querySelector("#filterBackgroundAlpha").value);
+                globalSettings.tradeMessage = configDialog.querySelector("#tradeMessage").value;
+                globalSettings.autoSend = configDialog.querySelector("#autoSend").checked;
+                globalSettings.doAfterTrade = configDialog.querySelector("#doAfterTrade").selectedOptions[0].value;
+                globalSettings.order = configDialog.querySelector("#order").selectedOptions[0].value;
+                blacklist = textToArray(configDialog.querySelector("#blacklist").value);
+                SaveConfig();
+                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload.Do you want to reload the page?').done(function(){
+                    document.location.reload()
+                });
+
+            } else {
+                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Are you sure you want to restore default settings?').done(function(){
+                    ResetConfig();
+                    SaveConfig();
+                    unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload.Do you want to reload the page?').done(function(){
+                        document.location.reload()
+                    });
+                });
+            }
+        });
+    }
+
+    function ResetConfig() {
+        //we won't clear blacklist here!
+        globalSettings = deepClone(defaultSettings);
+    }
+
+    function SaveConfig() {
+        localStorage.setItem("Ryzhehvost.ASF.STM.Settings",JSON.stringify(globalSettings));
+        localStorage.setItem("Ryzhehvost.ASF.STM.Blacklist",JSON.stringify(blacklist));
+    }
+
+    function LoadConfig() {
+        globalSettings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
+        blacklist = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Blacklist"));
+        if (globalSettings === null) {
+          ResetConfig();
+        }
+        if (blacklist === null) {
+            blacklist = [];
+        }
+        //vaildate config
+        Object.keys(defaultSettings).forEach(function(key){
+            if (!globalSettings.hasOwnProperty(key)){
+                globalSettings[key] = defaultSettings[defaultSettings];
+            }
+        });
     }
 
     function enableButton() {
@@ -119,9 +513,9 @@
     function populateCards(item) {
         let nameList = "";
         let htmlCards = "";
-        //TODO! Check for same hash but different name, ask user to report
+        //Check for same hash but different name, ask user to report
         for (let j = 0; j < item.cards.length; j++) {
-            for (let i = 0; j < item.cards.length; i++) {
+            for (let i = 0; i < item.cards.length; i++) {
                 if (i != j && item.cards[i].name != item.cards[j].name &&
                    item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) == item.cards[i].iconUrl.substring(item.cards[i].iconUrl.length - 5)) {
                     unsafeWindow.ShowAlertDialog('WARNING', 'Different cards have same signature, please report this: ' + item.appId);
@@ -225,8 +619,11 @@
             }
             return 0;
         }
-        itemsToSend.sort(compareNames);
-        itemsToReceive.sort(compareNames);
+
+        if (globalSettings.sortByName) {
+            itemsToSend.sort(compareNames);
+            itemsToReceive.sort(compareNames);
+        }
 
         let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
 
@@ -493,6 +890,35 @@
 
     function GetCards(index, userindex) {
         debugPrint("GetCards " + index + " : " + userindex);
+
+        if (userindex >= bots.Result.length) {
+            debugPrint("finished");
+            debugPrint(new Date(Date.now()));
+            hideThrobber();
+            hideMessage();
+            updateProgress(bots.Result.length - 1);
+            enableButton();
+            let stopButton = document.getElementById("asf_stm_stop");
+            stopButton.remove();
+            return;
+        }
+
+        if (userindex >=0 &&
+            (((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots) ||
+            ((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots) ||
+            (bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems) ||
+            ((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems)) ||
+            blacklist.includes(bots.Result[userindex].SteamID))) {
+            debugPrint("Ignoring bot "+ bots.Result[userindex].SteamID);
+            debugPrint(((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots));
+            debugPrint(((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots));
+            debugPrint((bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems));
+            debugPrint(((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems)));
+            debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
+            GetCards(0, userindex+1);
+            return;
+        }
+
         if (index == 0) {
             botBadges.length = 0;
             botBadges = deepClone(myBadges);
@@ -560,7 +986,7 @@
                                     GetCards(index, userindex);
                                 };
                             })(index, userindex),
-                            weblimiter
+                            globalSettings.weblimiter
                         );
                         return;
                     } else {
@@ -571,14 +997,14 @@
                 } else {
                     errors++;
                 }
-                if ((status < 400 || status >= 500) && errors <= maxErrors) {
+                if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
                     setTimeout(
                         (function (index, userindex) {
                             return function () {
                                 GetCards(index, userindex);
                             };
                         })(index, userindex),
-                        weblimiter + errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
                     );
                 } else {
                     if (status != 200) {
@@ -604,14 +1030,14 @@
                     return;
                 }
                 errors++;
-                if (errors <= maxErrors) {
+                if (errors <= globalSettings.maxErrors) {
                     setTimeout(
                         (function (index, userindex) {
                             return function () {
                                 GetCards(index, userindex);
                             };
                         })(index, userindex),
-                        weblimiter + errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
                     );
                     return;
                 } else {
@@ -667,25 +1093,25 @@
         } else {
             debugPrint(bots.Result[userindex].SteamID);
             compareCards(userindex, function () {
-                if (userindex < bots.Result.length - 1) {
+//                if (userindex < bots.Result.length - 1) {
                     setTimeout(
                         (function (userindex) {
                             return function () {
                                 GetCards(0, userindex);
                             };
                         })(userindex + 1),
-                        weblimiter
+                        globalSettings.weblimiter
                     );
-                } else {
-                    debugPrint("finished");
-                    debugPrint(new Date(Date.now()));
-                    hideThrobber();
-                    hideMessage();
-                    updateProgress(bots.Result.length - 1);
-                    enableButton();
-                    let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
-                }
+//                } else {
+//                    debugPrint("finished");
+//                    debugPrint(new Date(Date.now()));
+//                    hideThrobber();
+//                    hideMessage();
+//                    updateProgress(bots.Result.length - 1);
+//                    enableButton();
+//                    let stopButton = document.getElementById("asf_stm_stop");
+//                    stopButton.remove();
+//                }
             });
         }
     }
@@ -752,7 +1178,7 @@
             } else {
                 errors++;
             }
-            if ((status < 400 || status >= 500) && errors <= maxErrors) {
+            if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
                 if (page <= maxPages) {
                     setTimeout(
                         (function (page) {
@@ -760,11 +1186,11 @@
                                 getBadges(page);
                             };
                         })(page),
-                        weblimiter + errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
                     );
                 } else {
                     debugPrint("all badge pages processed");
-                    debugPrint(weblimiter + errorLimiter * errors);
+                    debugPrint(globalSettings.weblimiter + globalSettings.errorLimiter * errors);
                     if (myBadges.length === 0) {
                         hideThrobber();
                         updateMessage("No cards to match");
@@ -775,7 +1201,7 @@
                     } else {
                         setTimeout(function () {
                             GetCards(0, -1);
-                        }, weblimiter + errorLimiter * errors);
+                        }, globalSettings.weblimiter + globalSettings.errorLimiter * errors);
                     }
                 }
             } else {
@@ -801,14 +1227,14 @@
                 return;
             }
             errors++;
-            if (errors <= maxErrors) {
+            if (errors <= globalSettings.maxErrors) {
                 setTimeout(
                     (function (page) {
                         return function () {
                             getBadges(page);
                         };
                     })(page),
-                    weblimiter + errorLimiter * errors
+                    globalSettings.weblimiter + globalSettings.errorLimiter * errors
                 );
             } else {
                 debugPrint("error getting badge page");
@@ -878,6 +1304,7 @@
             fetchBots();
             return;
         }
+        bots.Result.sort(botSorter);
         disableButton();
         debugPrint(new Date(Date.now()));
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
@@ -911,7 +1338,7 @@
           </div>
           <div id="asf_stm_filters" style="position: fixed; z-index: 1000; right: 5px; bottom: 45px; transition-duration: 500ms;
                    transition-timing-function: ease; margin-right: -50%; padding: 5px; max-width: 40%; display: inline-block; border-radius: 2px;
-                   background:${filterBackgroundColor}; color: #67c1f5;">
+                   background:${globalSettings.filterBackgroundColor}; color: #67c1f5;">
               <div style="white-space: nowrap;">Select:
 	          <a id="asf_stm_filter_all" class="commentthread_pagelinks">
 		        all
@@ -946,6 +1373,42 @@
         getBadges(1);
     }
 
+    function botSorter(a, b) {
+        let result = 0;
+        for (let i = 0; i < globalSettings.sortBotsBy.length; i++) {
+            switch (globalSettings.sortBotsBy[i]) { //TODO: Switch to enum. That's bullshit.
+                case 'MatchEverythingFirst':
+                    result = b.MatchEverything - a.MatchEverything;
+                    break;
+                case 'MatchEverythingLast':
+                    result = a.MatchEverything - b.MatchEverything;
+                    break;
+                case 'TotalGamesCountDesc':
+                    result = b.TotalGamesCount - a.TotalGamesCount;
+                    break;
+                case 'TotalGamesCountAsc':
+                    result = a.TotalGamesCount - b.TotalGamesCount;
+                    break;
+                case 'TotalItemsCountDesc':
+                    result = b.TotalItemsCount - a.TotalItemsCount;
+                    break;
+                case 'TotalItemsCountAsc':
+                    result = a.TotalItemsCount - b.TotalItemsCount;
+                    break;
+                case 'TotalInventoryCountDesc':
+                    result = b.TotalInventoryCount - a.TotalInventoryCount;
+                    break;
+                case 'TotalInventoryCountAsc':
+                    result = a.TotalInventoryCount - b.TotalInventoryCount;
+                    break;
+            }
+            if (result !== 0) {
+                break;
+            }
+        }
+        return result;
+    }
+
     function fetchBots() {
         let requestUrl = "https://asf.justarchi.net/Api/Listing/Bots";
         let requestFunc;
@@ -972,20 +1435,20 @@
                     bots.cacheTime = Date.now();
                     if (bots.Success) {
                         //bots.filter(bot=>bot.matchable_cards===1||bot.matchable_foil_cards===1);  //I don't think this is really needed
-                        bots.Result.sort(function (a, b) {
-                            //sort received array as I like it. TODO: sort according to settings
-                            let result = b.MatchEverything - a.MatchEverything; //bots with MatchEverything go first
-                            if (result === 0) {
-                                result = b.TotalGamesCount - a.TotalGamesCount; //then by TotalGamesCount descending
-                            }
-                            if (result === 0) {
-                                result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
-                            }
-                            if (result === 0) {
-                                result = a.TotalInventoryCount - b.TotalInventoryCount; //then by TotalInventoryCount ascending
-                            }
-                            return result;
-                        });
+//                             function (a, b) {
+//                             //sort received array as I like it. TODO: sort according to settings
+//                             let result = b.MatchEverything - a.MatchEverything; //bots with MatchEverything go first
+//                             if (result === 0) {
+//                                 result = b.TotalGamesCount - a.TotalGamesCount; //then by TotalGamesCount descending
+//                             }
+//                             if (result === 0) {
+//                                 result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
+//                             }
+//                             if (result === 0) {
+//                                 result = a.TotalInventoryCount - b.TotalInventoryCount; //then by TotalInventoryCount ascending
+//                             }
+//                             return result;
+//                         });
                         debugPrint("found total " + bots.Result.length + " bots");
 
                         localStorage.setItem("Ryzhehvost.ASF.STM.BotCache", JSON.stringify(bots));
@@ -1030,6 +1493,7 @@
         });
     }
 //Main
+    LoadConfig();
     localStorage.removeItem("Ryzhehvost.ASF.STM") //we used to store classid database here before, clean this up.
     if (document.getElementsByClassName("badge_details_set_favorite").length != 0) {
         let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
@@ -1053,7 +1517,7 @@
 
         let buttonDiv = document.createElement("div");
         buttonDiv.setAttribute("class", "profile_small_header_additional");
-        buttonDiv.setAttribute("style", "margin-top: 40px;");
+        buttonDiv.setAttribute("style", "margin-top: 40px; right: 70px");
         buttonDiv.setAttribute("id", "asf_stm_button_div");
         buttonDiv.setAttribute("title", "Scan ASF STM");
         let button = document.createElement("a");
@@ -1064,6 +1528,20 @@
         buttonDiv.appendChild(button);
         let anchor = document.getElementsByClassName("profile_small_header_texture")[0];
         anchor.appendChild(buttonDiv);
+        let confButtonDiv = document.createElement("div");
+        confButtonDiv.setAttribute("class", "profile_small_header_additional");
+        confButtonDiv.setAttribute("style", "margin-top: 40px;");
+        confButtonDiv.setAttribute("id", "asf_stm_config_div");
+        confButtonDiv.setAttribute("title", "Configuration");
+        let confButton = document.createElement("a");
+        confButton.setAttribute("class", "btnv6_blue_hoverfade btn_medium_thin");
+        confButton.setAttribute("id", "asf_stm_config");
+        confButton.appendChild(document.createElement("span"));
+        confButton.firstChild.appendChild(document.createTextNode("⚙️"));
+        confButtonDiv.appendChild(confButton);
+        anchor.appendChild(confButtonDiv);
+        confButton.addEventListener("click", ShowConfigDialog, false);
+
         enableButton();
 
         // add our styles to the document's style sheet
@@ -1141,7 +1619,7 @@
                         tmpCards[requestedCards[index].id].push({type: inv[item].type, element: inv[item].element, id: inv[item].id});
                     }
                 });
-                if (g_s.ORDER === 'SORT') {
+                if (g_s.order === 'SORT') {
                     // sort cards descending by card id for each type
                     Object.keys(tmpCards).forEach(function (id) {
                         tmpCards[id].sort(mySort);
@@ -1154,7 +1632,7 @@
                         failLater = true;
                     } else {
                         index = 0;
-                        if (g_s.ORDER === 'RANDOM') {
+                        if (g_s.order === 'RANDOM') {
                             // randomize index
                             index = getRandomInt(0, currentCards.length);
                         }
@@ -1182,19 +1660,19 @@
             });
             restoreCookie(g_v.oldCookie);
             // inject some JS to do something after trade offer is sent
-            if (g_s.DO_AFTER_TRADE !== 'NOTHING') {
-                let functionToInject = 'let DO_AFTER_TRADE = "' + g_s.DO_AFTER_TRADE + '";';
+            if (g_s.doAfterTrade !== 'NOTHING') {
+                let functionToInject = 'let doAfterTrade = "' + g_s.doAfterTrade + '";';
                 functionToInject += '$J(document).ajaxSuccess(function (event, xhr, settings) {';
                 functionToInject += 'if (settings.url === "https://steamcommunity.com/tradeoffer/new/send") {';
-                functionToInject += 'if (DO_AFTER_TRADE === "CLOSE_WINDOW") { window.close();';
-                functionToInject += '} else if (DO_AFTER_TRADE === "CLICK_OK") {';
+                functionToInject += 'if (doAfterTrade === "CLOSE_WINDOW") { window.close();';
+                functionToInject += '} else if (doAfterTrade === "CLICK_OK") {';
                 functionToInject += 'document.querySelector("div.newmodal_buttons > div").click(); } } });';
                 let script = document.createElement('script');
                 script.appendChild(document.createTextNode(functionToInject));
                 document.body.appendChild(script);
             }
             // send trade offer
-            if (g_s.AUTO_SEND) {
+            if (g_s.autoSend) {
                 unsafeWindow.ToggleReady(true);
                 unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
             }
@@ -1222,7 +1700,7 @@
                 // select your inventory
                 unsafeWindow.TradePageSelectInventory(g_v.Users[0], 753, "6");
                 // set trade offer message
-                document.getElementById('trade_offer_note').value = g_s.MESSAGE;
+                document.getElementById('trade_offer_note').value = g_s.tradeMessage;
                 try {
                     addCards(g_s, g_v);
                 } catch (e) {
@@ -1250,23 +1728,6 @@
 
         ///// STM functions /////
 
-        async function restoreDefaultSettings() {
-            if (window.confirm('Are you sure you want to restore default settings?')) {
-                localStorage.removeItem("Ryzhehvost.ASF.STM.Settings")
-                    document.location.reload();
-            }
-        }
-
-        function saveSettings() {
-            global_settings.MESSAGE = document.getElementById('trade-message').value;
-            global_settings.DO_AFTER_TRADE = document.getElementById('after-trade').value
-            global_settings.ORDER = document.getElementById('cards-order').value;
-            global_settings.AUTO_SEND = document.getElementById('auto-send').checked;
-            localStorage.setItem("Ryzhehvost.ASF.STM.Settings",JSON.stringify())
-            document.getElementById('alert').style.display = 'block';
-            window.scroll(0, 0);
-        }
-
         function ParseCard(card) {
             let decodedVar = decodeURIComponent(card);
             const re = new RegExp("(.{5})\.([0-9]+)\-(.*)");
@@ -1284,49 +1745,11 @@
             }
         }
 
-        function prepareSettings(g_s) { //!!! TODO
-            "use strict";
-            let template = '<div class="panel panel-default"><div class="panel-heading">' +
-                '<h3 class="panel-title">{T}</h3></div><div class="panel-body">{B}</div></div>';
-            let content = document.getElementById('content');
-
-            let newHTML = '<div class="alert alert-success" id="alert" style="display:none">Your parameters have been saved.</div>';
-            newHTML += template.replace('{T}', 'Script installed!').replace('{B}', '<p>Congratulations! SteamTrade Matcher\'s Userscript is up and running!</p>');
-
-            newHTML += template.replace('{T}', 'Trade offer message').replace('{B}', '<p>Custom text that will be included automatically with your trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.</p><div><input type="text" name="trade-message" id="trade-message" class="form-control" value="' + g_s.MESSAGE + '"></div>');
-
-            newHTML += template.replace('{T}', 'Action after trade').replace('{B}', '<p>Determines what happens when you complete a trade offer.</p><ul><li><strong>Do nothing</strong>: Will do nothing more than the normal behavior.</li><li><strong>Close window</strong>: Will close the window after the trade offer is sent.</li><li><strong>Click OK</strong>: Will redirect you to the trade offers recap page.</li></ul><div class="option-block"><label for="after-trade">After trade...</label><select class="form-control" name="after-trade" id="after-trade"><option value="NOTHING">Do Nothing</option><option value="CLOSE_WINDOW">Close window</option><option value="CLICK_OK">Click OK</option></select></div>').replace(g_s.DO_AFTER_TRADE, g_s.DO_AFTER_TRADE + '" selected="');
-
-            newHTML += template.replace('{T}', 'Cards order').replace('{B}', '<p>Determines which card is added to trade.</p><ul><li><strong>Sorted</strong>: Will sort cards by their IDs before adding to trade. If you make several trade offers with the same card and one of them is accepted, the rest will have message "cards unavilable to trade".</li><li><strong>Random</strong>: Will add cards to trade randomly. If you make several trade offers and one of them is accepted, only some of them will be unavilable for trade.</li><li><strong>As is</strong>: Script doesn\'t change anything in order. Results vary depending on browser, steam servers, weather...</li></ul><div class="option-block"><label for="cards-order">Cards order</label><select class="form-control" name="cards-order" id="cards-order"><option value="SORT">Sorted</option><option value="RANDOM">Random</option><option value="AS_IS">As is</option></select></div>').replace(g_s.ORDER, g_s.ORDER + '" selected="');
-
-            newHTML += template.replace('{T}', 'Update users\' escrow status').replace('{B}', '<p>Help STM by sending escrow status of users you are trading with.</p><div class="checkbox"><label for="check-escrow"><input name="check-escrow" id="check-escrow" value="1" type="checkbox"' + (g_s.CHECK_ESCROW
-        ? ' checked="checked"'
-        : '') + '> Enable</label></div>');
-
-            newHTML += template.replace('{T}', 'Auto-send trade offer').replace('{B}', '<p>Makes it possible for the script to automatically send trade offers without any action on your side. This is not recommended as you should always check your trade offers, but, well, this is a possible thing. Please note that incomplete trade offers (missing cards, ...) won\'t be sent automatically even when this parameter is set to true.</p><div class="checkbox"><label for="auto-send"><input name="auto-send" id="auto-send" value="1" type="checkbox"' + (g_s.AUTO_SEND
-        ? ' checked="checked"'
-        : '') + '> Enable</label></div>');
-
-            newHTML += '<div id="save" style="margin-bottom:20px"><input class="btn btn-default btn-block" id="save-button" value="Save" type="submit"></div>';
-            newHTML += '<div id="restore" style="margin-bottom:20px"><input class="btn btn-default btn-block" id="restore-button" value="Restore default settings" type="submit"></div>';
-
-            content.innerHTML = newHTML + content.innerHTML;
-            document.getElementById('save').addEventListener("click", saveSettings, false);
-            document.getElementById('restore').addEventListener("click", restoreDefaultSettings, false);
-        }
-
         try {
 
-            let global_settings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
-            if (global_settings === null) {
-                global_settings = new Object();
-                global_settings.MESSAGE = 'ASF STM Matcher';
-                global_settings.AUTO_SEND = false;
-                global_settings.DO_AFTER_TRADE = 'NOTHING';
-                global_settings.ORDER = 'AS_IS';
-            }
+            LoadConfig();
 
-        // get cards data from URL
+            // get cards data from URL
 
             let vars = getUrlVars();
 
@@ -1359,7 +1782,7 @@
             let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
             let global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
 
-            window.setTimeout(checkContexts, 500, global_settings, global_vars);
+            window.setTimeout(checkContexts, 500, globalSettings, global_vars);
         } catch (e) {
             console.log(e);
         }
