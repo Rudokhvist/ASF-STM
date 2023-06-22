@@ -412,7 +412,11 @@
                 globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
                 globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
                 globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
-                globalSettings.sortBotsBy = ["MatchEverythingFirst","TotalGamesCountDesc","TotalItemsCountDesc","TotalInventoryCountAsc", "None"];
+                let newsortBotsBy = [];
+                document.querySelectorAll("[id^=sortBotsBy").forEach(function(elem){
+                    newsortBotsBy.push(elem.selectedOptions[0].value);
+                });
+                globalSettings.sortBotsBy = newsortBotsBy;
                 let newbotMinItems = Number(configDialog.querySelector("#botMinItems").value);
                 globalSettings.botMinItems = isNaN(newbotMinItems) ? globalSettings.botMinItems : newbotMinItems;
                 let newbotMaxItems = Number(configDialog.querySelector("#botMaxItems").value);
