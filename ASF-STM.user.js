@@ -175,7 +175,7 @@
         return rgba;
     }
 
-    function ShowConfigDialog() { //!!! TODO
+    function ShowConfigDialog() {
         let filterBG = rgbaToHex(globalSettings.filterBackgroundColor);
         let configDialogTemplate = `
               <div style="height:420px; margin-top:-20px; font-size:12px;margin-left: -20px;width: 620px;" >
@@ -320,7 +320,6 @@
                   <div id="asf_stm_tab-content2" class="asf_stm_content">
                   <br>
                   <fieldset><legend>TRADE OFFER MESSAGE</legend>
-                  <!--<input style="background-color: #171d25; color: white;" name="trade-message" id="tradeMessage" value="${globalSettings.tradeMessage}" type="text">-->
                   <textarea style="background-color: #171d25; color: white;" id="tradeMessage" name="tradeMessage" rows="4"
                cols="60">${globalSettings.tradeMessage}</textarea>
                   <a class="tooltip hover_tooltip" data-tooltip-text="Custom text that will be included automatically with your
@@ -410,7 +409,6 @@
 
         let dialog = unsafeWindow.ShowConfirmDialog('ASF STM Configuration', configDialog, "Save","Cancel","Reset").done(function(button) {
             if (button === 'OK') {
-                //TODO:save settings
                 globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
                 globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
                 globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
@@ -519,8 +517,8 @@
         let nameList = "";
         let htmlCards = "";
         for (let j = 0; j < item.cards.length; j++) {
-            let itemIcon = item.cards[j].iconUrl; //+"/98x115";
-            let itemName = item.cards[j].item; //.substring(item.cards[j].item.indexOf("-") + 1);
+            let itemIcon = item.cards[j].iconUrl;
+            let itemName = item.cards[j].item;
             for (let k = 0; k < item.cards[j].count; k++) {
                 if (nameList != "") {
                     nameList += ";";
@@ -560,7 +558,6 @@
         let splitUrl = tradeLink.href.split("&");
         let them = "";
         let you = "";
-        //let filterWidget = document.getElementById("asf_stm_filters_body");
         for (let i = 0; i < bots.Result[index].itemsToSend.length; i++) {
             let appId = bots.Result[index].itemsToSend[i].appId;
             let checkBox = document.getElementById("astm_" + appId);
@@ -875,7 +872,6 @@
         bots.Result[index].itemsToSend = itemsToSend;
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
-            //getUsername(index, callback);
             addMatchRow(index);
             callback();
         } else {
@@ -1101,7 +1097,6 @@
         } else {
             debugPrint(bots.Result[userindex].SteamID);
             compareCards(userindex, function () {
-//                if (userindex < bots.Result.length - 1) {
                     setTimeout(
                         (function (userindex) {
                             return function () {
@@ -1110,16 +1105,6 @@
                         })(userindex + 1),
                         globalSettings.weblimiter
                     );
-//                } else {
-//                    debugPrint("finished");
-//                    debugPrint(new Date(Date.now()));
-//                    hideThrobber();
-//                    hideMessage();
-//                    updateProgress(bots.Result.length - 1);
-//                    enableButton();
-//                    let stopButton = document.getElementById("asf_stm_stop");
-//                    stopButton.remove();
-//                }
             });
         }
     }
@@ -1154,7 +1139,7 @@
                     if (badges[i].getElementsByClassName("owned").length > 0) {
                         //we only need badges where we have at least one card, and no special badges
                         if (!badges[i].parentElement.querySelector(".badge_row_overlay").href.endsWith("border=1")) {
-                            //ignore foil badges completely so far.
+                            //ignore foil badges completely for now. TODO: match foils too.
                             let appidNodes = badges[i].getElementsByClassName("card_drop_info_dialog");
                             if (appidNodes.length > 0) {
                                 let appidText = appidNodes[0].getAttribute("id");
@@ -1384,7 +1369,7 @@
     function botSorter(a, b) {
         let result = 0;
         for (let i = 0; i < globalSettings.sortBotsBy.length; i++) {
-            switch (globalSettings.sortBotsBy[i]) { //TODO: Switch to enum. That's bullshit.
+            switch (globalSettings.sortBotsBy[i]) {
                 case 'MatchEverythingFirst':
                     result = b.MatchEverything - a.MatchEverything;
                     break;
@@ -1442,23 +1427,7 @@
                     bots = JSON.parse(fixedJson);
                     bots.cacheTime = Date.now();
                     if (bots.Success) {
-                        //bots.filter(bot=>bot.matchable_cards===1||bot.matchable_foil_cards===1);  //I don't think this is really needed
-//                             function (a, b) {
-//                             //sort received array as I like it. TODO: sort according to settings
-//                             let result = b.MatchEverything - a.MatchEverything; //bots with MatchEverything go first
-//                             if (result === 0) {
-//                                 result = b.TotalGamesCount - a.TotalGamesCount; //then by TotalGamesCount descending
-//                             }
-//                             if (result === 0) {
-//                                 result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
-//                             }
-//                             if (result === 0) {
-//                                 result = a.TotalInventoryCount - b.TotalInventoryCount; //then by TotalInventoryCount ascending
-//                             }
-//                             return result;
-//                         });
                         debugPrint("found total " + bots.Result.length + " bots");
-
                         localStorage.setItem("Ryzhehvost.ASF.STM.BotCache", JSON.stringify(bots));
                         buttonPressedEvent();
                     } else {
@@ -1571,15 +1540,10 @@
         //All code below is a modified version of SteamTrade Matcher Userscript by Tithen-Firion
         //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
 
-
         // MIT License
-
         // Copyright (c) 2017 Tithen-Firion
-
         // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
         // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
         // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         function getRandomInt(min, max) {
