@@ -209,14 +209,14 @@
                   <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[0]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
               bots first</option>
                   <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[0]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
                   <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
                   <option value="None" ${globalSettings.sortBotsBy[0]==="None" ? "selected=\"selected\"" : ""}>None</option>
                   </select>
                   </div>
@@ -226,14 +226,14 @@
                   <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[1]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
               bots first</option>
                   <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[1]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
                   <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
                   <option value="None" ${globalSettings.sortBotsBy[1]==="None" ? "selected=\"selected\"" : ""}>None</option>
                   </select>
                   </div>
@@ -244,14 +244,14 @@
                   <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[2]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
               bots first</option>
                   <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[2]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
                   <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
                   <option value="None" ${globalSettings.sortBotsBy[2]==="None" ? "selected=\"selected\"" : ""}>None</option>
                   </select>
                   </div>
@@ -262,14 +262,14 @@
                   <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[3]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
               bots first</option>
                   <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[3]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
                   <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
                   <option value="None" ${globalSettings.sortBotsBy[3]==="None" ? "selected=\"selected\"" : ""}>None</option>
                   </select>
                   </div>
