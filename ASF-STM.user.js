@@ -98,6 +98,9 @@
     .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked ~ [id^="asf_stm_tab-content"] {
         display: block;
     }
+    textarea {
+      resize: none;
+    }
     `;
 
     function debugTime(name) {
@@ -317,7 +320,9 @@
                   <div id="asf_stm_tab-content2" class="asf_stm_content">
                   <br>
                   <fieldset><legend>TRADE OFFER MESSAGE</legend>
-                  <input style="background-color: #171d25; color: white;" name="trade-message" id="tradeMessage" value="${globalSettings.tradeMessage}" type="text">
+                  <!--<input style="background-color: #171d25; color: white;" name="trade-message" id="tradeMessage" value="${globalSettings.tradeMessage}" type="text">-->
+                  <textarea style="background-color: #171d25; color: white;" id="tradeMessage" name="tradeMessage" rows="4"
+               cols="60">${globalSettings.tradeMessage}</textarea>
                   <a class="tooltip hover_tooltip" data-tooltip-text="Custom text that will be included automatically with your
               trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.">
               <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
@@ -430,7 +435,7 @@
                 globalSettings.order = configDialog.querySelector("#order").selectedOptions[0].value;
                 blacklist = textToArray(configDialog.querySelector("#blacklist").value);
                 SaveConfig();
-                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload.Do you want to reload the page?').done(function(){
+                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload. Do you want to reload the page?').done(function(){
                     document.location.reload()
                 });
 
@@ -438,7 +443,7 @@
                 unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Are you sure you want to restore default settings?').done(function(){
                     ResetConfig();
                     SaveConfig();
-                    unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload.Do you want to reload the page?').done(function(){
+                    unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload. Do you want to reload the page?').done(function(){
                         document.location.reload()
                     });
                 });
@@ -513,15 +518,6 @@
     function populateCards(item) {
         let nameList = "";
         let htmlCards = "";
-        //Check for same hash but different name, ask user to report
-        for (let j = 0; j < item.cards.length; j++) {
-            for (let i = 0; i < item.cards.length; i++) {
-                if (i != j && item.cards[i].name != item.cards[j].name &&
-                   item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) == item.cards[i].iconUrl.substring(item.cards[i].iconUrl.length - 5)) {
-                    unsafeWindow.ShowAlertDialog('WARNING', 'Different cards have same signature, please report this: ' + item.appId);
-                }
-            }
-        }
         for (let j = 0; j < item.cards.length; j++) {
             let itemIcon = item.cards[j].iconUrl; //+"/98x115";
             let itemName = item.cards[j].item; //.substring(item.cards[j].item.indexOf("-") + 1);
@@ -977,6 +973,18 @@
                             };
                             debugPrint(JSON.stringify(newcard));
                             botBadges[index].cards.push(newcard);
+                        }
+
+                        //Check for same hash but different name, ask user to report
+                        if (userindex == -1) {
+                            for (let j = 0; j < botBadges[index].cards.length; j++) {
+                                for (let i = 0; i < botBadges[index].cards.length; i++) {
+                                    if (i != j && botBadges[index].cards[i].name != botBadges[index].cards[j].name &&
+                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) == botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)) {
+                                        unsafeWindow.ShowAlertDialog('WARNING', 'Different cards have same signature, please report this: ' + botBadges[index].appId);
+                                    }
+                                }
+                            }
                         }
 
                         index++;
