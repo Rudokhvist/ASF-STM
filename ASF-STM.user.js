@@ -39,7 +39,7 @@
         botMaxItems: 0,
         weblimiter:300,
         errorLimiter:30000,
-        debug:true,
+        debug:true, //TODO: switch before release!
         maxErrors:3,
         filterBackgroundColor:"rgba(23,26,33,0.8)",
         // for trade offer
@@ -413,7 +413,7 @@
                 globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
                 globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
                 let newsortBotsBy = [];
-                document.querySelectorAll("[id^=sortBotsBy").forEach(function(elem){
+                configDialog.querySelectorAll("[id^=sortBotsBy").forEach(function(elem){
                     newsortBotsBy.push(elem.selectedOptions[0].value);
                 });
                 globalSettings.sortBotsBy = newsortBotsBy;
@@ -515,6 +515,18 @@
         let bar = document.getElementById("asf_stm_progress");
         let progress = 100 * ((index + 1) / bots.Result.length);
         bar.setAttribute("style", "width: " + progress + "%;");
+    }
+
+    function blacklistEventHandler(event) {
+        let steamID = event.currentTarget.id.split("_")[1];
+        if (blacklist.includes(steamID)) {
+            return;
+        }
+
+        unsafeWindow.ShowConfirmDialog('CONFIRMATION', `Are you sure you want to blacklist bot ${steamID} ?`).done(function(){
+            blacklist.push(steamID);
+            SaveConfig();
+        });
     }
 
     function populateCards(item) {
@@ -730,6 +742,8 @@
                   <div class="badge_title">
                     &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${bots.Result[index].Nickname}</a>${any}
                     &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalInventoryCount} items)</span>
+                    &ensp;<a id="blacklist_${bots.Result[index].SteamID}" data-tooltip-text="Blacklist this bot"  class="tooltip hover_tooltip"><img
+                    src="https://community.cloudflare.steamstatic.com/public/images/skin_1/iconForumBan.png?v=1"></a>
                   </div>
                 </div>
                 <div class="badge_title_rule"></div>
@@ -741,6 +755,7 @@
         template.innerHTML = rowTemplate.trim();
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         let newChild = template.content.firstChild;
+        newChild.querySelector(`#blacklist_${bots.Result[index].SteamID}`).addEventListener("click", blacklistEventHandler, true);
         mainContentDiv.appendChild(newChild);
         checkRow(newChild);
     }
