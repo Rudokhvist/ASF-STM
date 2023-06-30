@@ -133,7 +133,7 @@
             for (let i = 0; i < str.length; i++) {
                 result = (result * 10 + Number(str[i])) % 4294967296;
             }
-            return result;
+            return result.toString();
         }
     }
 
@@ -860,7 +860,7 @@
                                         };
                                         itemsToReceive.push(newMatch);
                                     } else {
-                                        let existingCard = sendmatch.cards.find((a) => a.item == itemToReceive.item);
+                                        let existingCard = receiveMatch.cards.find((a) => a.item == itemToReceive.item);
                                         if (existingCard == undefined) {
                                             receiveMatch.cards.push(itemToReceive);
                                         } else {
@@ -889,6 +889,7 @@
                 theirBadge.cards.sort((a, b) => b.count - a.count);
             }
         }
+
         debugPrint("items to send");
         debugPrint(JSON.stringify(itemsToSend));
         debugPrint("items to receive");
