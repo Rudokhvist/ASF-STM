@@ -762,6 +762,8 @@
 
     function calcState(badge) {
         //state 0 - less than max sets; state 1 - we have max sets, even out the rest, state 2 - all even
+        debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet +
+                   " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);
         if (badge.cards[badge.maxCards - 1].count == badge.maxSets) {
             if (badge.cards[0].count == badge.lastSet) {
                 return 2; //nothing to do
@@ -873,15 +875,18 @@
                                     break; //found a match!
                                 }
                             }
+                            if (foundMatch) { //if we found something - we need to sort cards again and start over.
+                                myBadge.cards.sort((a, b) => b.count - a.count);
+                                myState = calcState(myBadge);
+                                debugPrint("new myState=" + myState);
+                            }
                         }
                     }
                 }
                 if (!foundMatch) {
                     break; //found no matches - move to next badge
                 }
-                myBadge.cards.sort((a, b) => b.count - a.count);
                 theirBadge.cards.sort((a, b) => b.count - a.count);
-                myState = calcState(myBadge);
             }
         }
         debugPrint("items to send");
