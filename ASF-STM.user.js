@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         3.0
+// @version         3.3
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -926,7 +926,7 @@
             (bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems) ||
             ((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems)) ||
             blacklist.includes(bots.Result[userindex].SteamID))) {
-            debugPrint("Ignoring bot "+ bots.Result[userindex].SteamID);
+            debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
             debugPrint(((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots));
             debugPrint(((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots));
             debugPrint((bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems));
@@ -954,7 +954,7 @@
                 updateProgress(userindex);
             }
 
-            let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId + "?l=english";
+            let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
             let xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
             xhr.responseType = "document";
@@ -971,6 +971,18 @@
                 let status = xhr.status;
                 if (status === 200) {
                     debugPrint("processing badge " + botBadges[index].appId);
+                    if (null !== xhr.response.documentElement.querySelector("body.private_profile")) {
+                        debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);
+                        setTimeout(
+                            (function (index, userindex) {
+                                return function () {
+                                    GetCards(index, userindex);
+                                };
+                            })(0, userindex+1),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                        );
+                        return;
+                    }
                     let badgeCards = xhr.response.documentElement.querySelectorAll(".badge_card_set_card");
                     if (badgeCards.length >= 5) {
                         errors = 0;
@@ -1135,7 +1147,7 @@
     }
 
     function getBadges(page) {
-        let url = "https://steamcommunity.com/" + myProfileLink + "/badges?p=" + page + "&l=english";
+        let url = "https://steamcommunity.com/" + myProfileLink + "/badges?p=" + page;
         let xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
         xhr.responseType = "document";
