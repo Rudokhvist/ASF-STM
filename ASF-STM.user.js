@@ -1619,6 +1619,12 @@
                 Object.keys(inv).forEach(function (item) {
                     // add all matching cards to temporary dict
                     index = requestedCards.findIndex(function (elem) {
+//                         if (inv[item].icon_url !== inv[item].icon_url_large) {
+//                             let tagindex = inv[item].tags.findIndex( (tag) => tag.category === "item_class");
+//                             if ((tagindex > -1) && inv[item].tags[tagindex].internal_name === "item_class_2") {
+//                                 debugPrint("DIFFERENT ICONS: " + inv[item].name + ":\n" + inv[item].icon_url + "\n" + inv[item].icon_url_large);
+//                             }
+//                         }
                         return ((elem.appid == inv[item].market_fee_app) && ((elem.name === inv[item].name) || inv[item].icon_url.endsWith(elem.hash)));
                     });
                     if (index > -1) {
@@ -1715,7 +1721,7 @@
                 } catch (e) {
                     // no matter what happens, restore old cookie
                     restoreCookie(g_v.oldCookie);
-                    console.log(e);
+                    debugPrint(e);
                 }
             } else {
                 window.setTimeout(checkContexts, 500, g_s, g_v);
@@ -1793,7 +1799,7 @@
 
             window.setTimeout(checkContexts, 500, globalSettings, global_vars);
         } catch (e) {
-            console.log(e);
+            debugPrint(e);
         }
     }
 })();
