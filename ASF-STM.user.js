@@ -407,7 +407,7 @@
         templateElement.innerHTML = configDialogTemplate.trim();
         let configDialog = templateElement.content.firstChild;
 
-        let dialog = unsafeWindow.ShowConfirmDialog('ASF STM Configuration', configDialog, "Save","Cancel","Reset").done(function(button) {
+        unsafeWindow.ShowConfirmDialog('ASF STM Configuration', configDialog, "Save","Cancel","Reset").done(function(button) {
             if (button === 'OK') {
                 globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
                 globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
@@ -428,7 +428,6 @@
                 globalSettings.debug = configDialog.querySelector("#debug").checked;
                 let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
                 globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
-                let newAlpha = Number(configDialog.querySelector("#filterBackgroundAlpha").value);
                 globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value),
                                                                 configDialog.querySelector("#filterBackgroundAlpha").value);
                 globalSettings.tradeMessage = configDialog.querySelector("#tradeMessage").value;
