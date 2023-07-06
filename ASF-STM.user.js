@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name            ASF STM DEV
+// @name            ASF STM
 // @namespace       https://greasyfork.org/users/2205
 // @description     ASF bot list trade matcher
 // @description:vi  Trình khớp lệnh giao dịch danh sách bot ASF
 // @license         Apache-2.0
-// @author          Ryzhehvost
+// @author          Rudokhvist
 // @match           *://steamcommunity.com/id/*/badges
 // @match           *://steamcommunity.com/id/*/badges/
 // @match           *://steamcommunity.com/profiles/*/badges
@@ -39,7 +39,7 @@
         botMaxItems: 0,
         weblimiter:300,
         errorLimiter:30000,
-        debug:true, //TODO: switch before release!
+        debug:false,
         maxErrors:3,
         filterBackgroundColor:"rgba(23,26,33,0.8)",
         // for trade offer
