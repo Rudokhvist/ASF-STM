@@ -4,12 +4,13 @@
 // @description     ASF bot list trade matcher
 // @description:vi  Trình khớp lệnh giao dịch danh sách bot ASF
 // @license         Apache-2.0
-// @author          Ryzhehvost
+// @author          Rudokhvist
 // @match           *://steamcommunity.com/id/*/badges
 // @match           *://steamcommunity.com/id/*/badges/
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
-// @version         2.10
+// @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
+// @version         3.3
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -18,23 +19,7 @@
 
 (function () {
     "use strict";
-    //configuration
-    const weblimiter = 300;
-    const errorLimiter = 30000;
-    const debug = false;
-    const maxErrors = 3;
-    const botCacheTime = 5 * 60000;
-    const filterBackgroundColor = "rgba(23, 26, 33, 0.8)"; //"rgba(103, 193, 245, 0.8)";
 
-    //styles
-    const css = `
-    #asf_stm_filters_body {
-        max-height: calc(100vh - 95px);
-        overflow-y: auto;
-    }
-    `;
-
-    //do not change
     let myProfileLink = "";
     let errors = 0;
     let bots = null;
@@ -42,25 +27,96 @@
     let botBadges = [];
     let maxPages;
     let stop = false;
-    let classIdsDB = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM"));
-    if (classIdsDB === null) {
-        classIdsDB = new Object();
+    let botCacheTime = 5 * 60000;
+    let globalSettings = null;
+    let blacklist = [];
+    let defaultSettings = {
+        anyBots:true,
+        fairBots:true,
+        sortByName: true,
+        sortBotsBy: ["MatchEverythingFirst","TotalGamesCountDesc","TotalItemsCountDesc","TotalInventoryCountAsc", "None"],
+        botMinItems: 0,
+        botMaxItems: 0,
+        weblimiter:300,
+        errorLimiter:30000,
+        debug:false,
+        maxErrors:3,
+        filterBackgroundColor:"rgba(23,26,33,0.8)",
+        // for trade offer
+        tradeMessage:'ASF STM Matcher',
+        autoSend:false,
+        doAfterTrade:'NOTHING',
+        order:'AS_IS',
+    };
+
+    //styles
+    const css = `
+    #asf_stm_filters_body {
+        max-height: calc(100vh - 95px);
+        overflow-y: auto;
     }
+    .asf_stm_tabs{
+        width: 600px;
+        display: block;
+        margin: 40px auto;
+        position: relative;
+    }
+    .asf_stm_tabs .asf_stm_tab{
+        float: left;
+        display: block;
+    }
+    .asf_stm_tabs .asf_stm_tab>input[type="radio"] {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    .asf_stm_tabs .asf_stm_tab>label {
+        display: block;
+        padding: 6px 21px;
+        cursor: pointer;
+        position: relative;
+        color: #FFF;
+        background: #4A83FD;
+    }
+    .asf_stm_tabs .asf_stm_content {
+        display: none;
+        overflow: hidden;
+        width: 630px;
+        height: 380px;
+        padding: 5px;
+        position: absolute;
+        top: 27px;
+        left: 0;
+        background: #303030;
+        color: #DFDFDF;
+    }
+    .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked + label {
+        top: 0;
+        background: #303030;
+        color: #F5F5F5;
+    }
+    .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked ~ [id^="asf_stm_tab-content"] {
+        display: block;
+    }
+    textarea {
+      resize: none;
+    }
+    `;
 
     function debugTime(name) {
-        if (debug) {
+        if (globalSettings.debug) {
             console.time(name);
         }
     }
 
     function debugTimeEnd(name) {
-        if (debug) {
+        if (globalSettings.debug) {
             console.timeEnd(name);
         }
     }
 
     function debugPrint(msg) {
-        if (debug) {
+        if (globalSettings.debug) {
             console.log(new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 }) + " : " + msg);
         }
     }
@@ -77,8 +133,350 @@
             for (let i = 0; i < str.length; i++) {
                 result = (result * 10 + Number(str[i])) % 4294967296;
             }
-            return result;
+            return result.toString();
         }
+    }
+
+    function arrayToText(array) {
+        return array.join(",\n");
+    }
+
+    function textToArray(text) {
+        let res = [];
+        text.split(",").forEach(function(elem) {
+            if (/^\d+$/.test(elem.trim())) {
+                res.push(elem.trim());
+            }
+        });
+       return res;
+    }
+
+    function hexToRgba(hex) {
+        return 'rgba('+[Number("0x"+hex.substring(1,3)), Number("0x"+hex.substring(3,5)), Number("0x"+hex.substring(5,7))].join(',')+',1)';
+    }
+
+    function rgbaToHex(rgba) {
+        let re=/rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
+        let result = re.exec(rgba);
+        if (result === null || result.length != 5) {
+            debugPrint("failed to parse color!");
+            return ["#171a21",0.8];
+        }
+        return ["#"+Number(result[1]).toString(16)+Number(result[2]).toString(16)+Number(result[3]).toString(16),Number(result[4])];
+    }
+
+    function mixAlpha(rgba,alpha) {
+        let re = /(rgba\([.\d]+,[.\d]+,[.\d]+,)([.\d]+)\)/g;
+        let result = re.exec(rgba);
+        if (result) {
+            return result[1]+alpha+")";
+        }
+        debugPrint("failed to mix alpha!");
+        return rgba;
+    }
+
+    function ShowConfigDialog() {
+        let filterBG = rgbaToHex(globalSettings.filterBackgroundColor);
+        let configDialogTemplate = `
+              <div style="height:420px; margin-top:-20px; font-size:12px;margin-left: -20px;width: 620px;" >
+              <ul style="margin: 0;padding: 0;" class="asf_stm_tabs">
+                <li class="asf_stm_tab">
+                  <input name="asf_stm_tabs" checked="checked"
+               id="asf_stm_tab1" type="radio"><label
+               for="asf_stm_tab1">Matcher</label>
+                  <div id="asf_stm_tab-content1" class="asf_stm_content">
+                  <fieldset style="padding-top: 0px;"><legend>BOTS TO MATCH</legend>
+                  <div style="margin-bottom: 6px;"> Match with "Any"
+              bots:&nbsp;<input style="background-color: #171d25; color: white;"
+               id="anyBots" ${globalSettings.anyBots ? "checked=\"checked\"" : ""} type="checkbox">&nbsp;Match
+              with "Fair"
+              bots:&nbsp;<input style="background-color: #171d25; color: white;"
+               id="fairBots" ${globalSettings.fairBots ? "checked=\"checked\"" : ""} type="checkbox"><br>
+                  </div>
+                  <div style="margin-bottom: 6px;"> Minimum
+              items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
+               id="botMinItems" value=${globalSettings.botMinItems} type="number">&nbsp;Maximum
+              items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
+               id="botMaxItems" value=${globalSettings.botMaxItems} type="number"><a class="tooltip hover_tooltip" data-tooltip-text="Don't match with bots
+               that has less or more than required limit of items in steam inventory. 0 means no limit on number of items">
+              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  <br>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                  <span style="width: 80px; display: inline-block;">Sort bots by:</span>
+                  <select style="background-color: #171d25; color: white;"
+               id="sortBotsBy0">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[0]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[0]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[0]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  <div style="margin-bottom: 6px;"><span
+               style="width: 80px; display: inline-block;"> …then by:</span>
+                  <select style="background-color: #171d25; color: white;" id="sortBotsBy1">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[1]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[1]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[1]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  <div style="margin-bottom: 6px;"><span
+               style="width: 80px; display: inline-block;">…then by:</span>
+                  <select style="background-color: #171d25; color: white;"
+               id="sortBotsBy2">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[2]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[2]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[2]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  <div style="margin-bottom: 6px;"><span
+               style="width: 80px; display: inline-block;">…then by:</span>
+                  <select style="background-color: #171d25; color: white;"
+               id="sortBotsBy3">
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[3]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+              bots first</option>
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[3]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              descending</option>
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+              ascending</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[3]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  </select>
+                  </div>
+                  </fieldset>
+                  <fieldset style="padding-top: 0px;"><legend>INTERFACE</legend>
+                  <div style="margin-bottom: 6px;"> Game filter pop-up
+              background color:&nbsp;<input
+               style="background-color: #171d25; color: white; height: 20px; padding: 2px;"
+               id="filterBackgroundColor" value="${filterBG[0]}" type="color">&nbsp;opacity:&nbsp;<input
+               style="height: 4px;"
+               id="filterBackgroundAlpha" min=0 max=1
+               step=0.01 value=${filterBG[1]} type="range"><br>
+                  </div>
+                  <div style="margin-bottom: 6px;"> Sort results by game
+              name:&nbsp;<input
+               style="border: medium none transparent; background-color: #171d25; color: white;"
+               id="sortByName" ${globalSettings.sortByName ? "checked=\"checked\"" : ""} type="checkbox">
+                  </div>
+                  </fieldset>
+                  <fieldset style="padding-top: 0px;"><legend>SETTINGS</legend>
+                    <fieldset style="padding-top: 0px; float: right; width:200px;"><legend>DEVELOPER</legend>
+                                    <div style="margin-bottom: 6px;">Debug:&nbsp;
+                                    <input style="background-color: #171d25; color: white;"
+                                    id="debug" type="checkbox"  ${globalSettings.debug ? "checked=\"checked\"" : ""} >
+                                     <a class="tooltip hover_tooltip" data-tooltip-text="Enable additional output to console">
+                                     <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                                    </div>
+                    </fieldset>
+                  <div style="margin-bottom: 6px;"> Web limiter delay,
+              ms:&nbsp;<input class="price_option_input"
+               style="border: medium none transparent; background-color: #171d25; color: white;"
+               id="weblimiter" value= ${globalSettings.weblimiter}  min=0 type="number"></div>
+                  <div style="margin-bottom: 6px;"> Delay on error,
+              ms:&nbsp;<input class="price_option_input"
+               style="background-color: #171d25; color: white;"
+               id="errorLimiter" value=${globalSettings.errorLimiter} min=0 type="number"></div>
+                  <div style="margin-bottom: 6px;"> Max errors:&nbsp;<input
+               class="price_option_input"
+               style="background-color: #171d25; color: white;"
+               id="maxErrors" value=${globalSettings.maxErrors} min=0 type="number"></div>
+                  </div>
+                  </fieldset>
+                </li>
+                <li class="asf_stm_tab">
+                  <input name="asf_stm_tabs" id="asf_stm_tab2"
+               type="radio"><label for="asf_stm_tab2">Trade
+              helper</label>
+                  <div id="asf_stm_tab-content2" class="asf_stm_content">
+                  <br>
+                  <fieldset><legend>TRADE OFFER MESSAGE</legend>
+                  <textarea style="background-color: #171d25; color: white;" id="tradeMessage" name="tradeMessage" rows="4"
+               cols="60">${globalSettings.tradeMessage}</textarea>
+                  <a class="tooltip hover_tooltip" data-tooltip-text="Custom text that will be included automatically with your
+              trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.">
+              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  <br>
+                  <fieldset><legend>ACTION AFTER TRADE
+                  </legend>
+                  <label for="after-trade">After
+              trade...</label>
+                  <select style="background-color: #171d25; color: white;" name="after-trade" id="doAfterTrade">
+                  <option value="NOTHING" ${globalSettings.doAfterTrade == "NOTHING" ? "selected=\"selected\"" : ""}>Do
+              Nothing</option>
+                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade == "CLOSE_WINDOW" ? "selected=\"selected\"" : ""}>Close window</option>
+                  <option value="CLICK_OK" ${globalSettings.doAfterTrade == "CLICK_OK" ? "selected=\"selected\"" : ""}>Click OK</option>
+                  </select>
+                  <a class="tooltip hover_tooltip" data-tooltip-html="
+                  <p>Determines what happens when you complete a trade offer.</p>
+                  <ul>
+                    <li><strong>Do nothing</strong>: Will do
+              nothing more than the normal behavior.</li>
+                    <li><strong>Close window</strong>: Will close
+              the window after the trade offer is sent.</li>
+                    <li><strong>Click OK</strong>: Will redirect
+              you to the trade offers recap page.</li>
+                  </ul>">
+                  <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  <br>
+                  <fieldset><legend>CARDS OFFER
+                  </legend>
+                  <label for="cards-order">Cards
+              order</label>
+                  <select style="background-color: #171d25; color: white;" class="form-control" name="cards-order"
+               id="order">
+                  <option value="SORT" ${globalSettings.order == "SORT" ? "selected=\"selected\"" : ""}>Sorted</option>
+                  <option value="RANDOM" ${globalSettings.order == "RANDOM" ? "selected=\"selected\"" : ""}>Random</option>
+                  <option value="AS_IS" ${globalSettings.order == "AS_IS" ? "selected=\"selected\"" : ""}>As is</option>
+                  </select>
+                   <a class="tooltip hover_tooltip" data-tooltip-html="
+                   <p>Determines which card is added to trade.</p>
+                  <ul>
+                    <li><strong>Sorted</strong>: Will sort cards by
+              their IDs before adding to trade. If you make several trade offers with
+              the same card and one of them is accepted, the rest will have message
+              &quot;cards unavilable to trade&quot;.</li>
+                    <li><strong>Random</strong>: Will add cards to
+              trade randomly. If you make several trade offers and one of them is
+              accepted, only some of them will be unavilable for trade.</li>
+                    <li><strong>As is</strong>: Script doesn't
+              change anything in order. Results vary depending on browser, steam
+              servers, weather...</li>
+                  </ul>">
+                  <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  <br>
+                  <fieldset><legend>AUTO-SEND TRADE OFFER
+                  </legend>
+                  <label for="auto-send"><input style="background-color: #171d25; color: white;" name="auto-send"
+               id="autoSend" value="1" type="checkbox" ${globalSettings.autoSend ? "checked=\"checked\"" : ""}>
+              Enable</label>
+                   <a class="tooltip hover_tooltip" data-tooltip-text="Makes it possible for the script to automatically send
+              trade offers without any action on your side. This is not recommended
+              as you should always check your trade offers, but, well, this is a
+              possible thing. Please note that incomplete trade offers (missing
+              cards, ...) won't be sent automatically even when this parameter is set
+              to true.">
+              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
+                  </fieldset>
+                  </div>
+                </li>
+                <li class="asf_stm_tab">
+                  <input name="asf_stm_tabs" id="asf_stm_tab3"
+               type="radio"><label for="asf_stm_tab3">Blacklist</label>
+                  <div id="asf_stm_tab-content3" class="asf_stm_content">
+                  <div class="title_text profile_xp_block_remaining"><h1>Comma-separated list of ignored steamIDs</h1><div><div>
+                  <textarea style="background-color: #171d25; color: white;" id="blacklist" name="Blacklist" rows="17"
+               cols="63">${arrayToText(blacklist)}</textarea></div>
+                </li>
+              </ul>
+              </div>
+        `;
+        let templateElement = document.createElement("template");
+        templateElement.innerHTML = configDialogTemplate.trim();
+        let configDialog = templateElement.content.firstChild;
+
+        unsafeWindow.ShowConfirmDialog('ASF STM Configuration', configDialog, "Save","Cancel","Reset").done(function(button) {
+            if (button === 'OK') {
+                globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
+                globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
+                globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
+                let newsortBotsBy = [];
+                configDialog.querySelectorAll("[id^=sortBotsBy").forEach(function(elem){
+                    newsortBotsBy.push(elem.selectedOptions[0].value);
+                });
+                globalSettings.sortBotsBy = newsortBotsBy;
+                let newbotMinItems = Number(configDialog.querySelector("#botMinItems").value);
+                globalSettings.botMinItems = isNaN(newbotMinItems) ? globalSettings.botMinItems : newbotMinItems;
+                let newbotMaxItems = Number(configDialog.querySelector("#botMaxItems").value);
+                globalSettings.botMaxItems = isNaN(newbotMaxItems) ? globalSettings.botMaxItems : newbotMaxItems;
+                let newweblimiter = Number(configDialog.querySelector("#weblimiter").value);
+                globalSettings.weblimiter = isNaN(newweblimiter) ? globalSettings.weblimiter : newweblimiter;
+                let newerrorLimiter = Number(configDialog.querySelector("#errorLimiter").value);
+                globalSettings.errorLimiter = isNaN(newerrorLimiter) ? globalSettings.errorLimiter : newerrorLimiter;
+                globalSettings.debug = configDialog.querySelector("#debug").checked;
+                let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
+                globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
+                globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value),
+                                                                configDialog.querySelector("#filterBackgroundAlpha").value);
+                globalSettings.tradeMessage = configDialog.querySelector("#tradeMessage").value;
+                globalSettings.autoSend = configDialog.querySelector("#autoSend").checked;
+                globalSettings.doAfterTrade = configDialog.querySelector("#doAfterTrade").selectedOptions[0].value;
+                globalSettings.order = configDialog.querySelector("#order").selectedOptions[0].value;
+                blacklist = textToArray(configDialog.querySelector("#blacklist").value);
+                SaveConfig();
+                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload. Do you want to reload the page?').done(function(){
+                    document.location.reload()
+                });
+
+            } else {
+                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Are you sure you want to restore default settings?').done(function(){
+                    ResetConfig();
+                    SaveConfig();
+                    unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload. Do you want to reload the page?').done(function(){
+                        document.location.reload()
+                    });
+                });
+            }
+        });
+    }
+
+    function ResetConfig() {
+        //we won't clear blacklist here!
+        globalSettings = deepClone(defaultSettings);
+    }
+
+    function SaveConfig() {
+        localStorage.setItem("Ryzhehvost.ASF.STM.Settings",JSON.stringify(globalSettings));
+        localStorage.setItem("Ryzhehvost.ASF.STM.Blacklist",JSON.stringify(blacklist));
+    }
+
+    function LoadConfig() {
+        globalSettings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
+        blacklist = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Blacklist"));
+        if (globalSettings === null) {
+          ResetConfig();
+        }
+        if (blacklist === null) {
+            blacklist = [];
+        }
+        //vaildate config
+        Object.keys(defaultSettings).forEach(function(key){
+            if (!globalSettings.hasOwnProperty(key)){
+                globalSettings[key] = defaultSettings[defaultSettings];
+            }
+        });
     }
 
     function enableButton() {
@@ -118,174 +516,29 @@
         bar.setAttribute("style", "width: " + progress + "%;");
     }
 
-    function getClassIDs(index) {
-        updateMessage("Updating cards database for badge " + (index + 1) + " of " + myBadges.length);
-        debugPrint("getClassIDs for " + myBadges[index].appId);
-        for (let i = 0; i < myBadges[index].maxCards; i++) {
-            if (classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[i].item)) {
-                if (i == myBadges[index].maxCards - 1) {
-                    //it's last card, so it means we have them all
-                    index++;
-                    if (index < myBadges.length) {
-                        getClassIDs(index);
-                    } else {
-                        debugPrint(JSON.stringify(classIdsDB));
-                        localStorage.setItem("Ryzhehvost.ASF.STM", JSON.stringify(classIdsDB));
-                        setTimeout(function () {
-                            GetCards(0, 0);
-                        }, weblimiter);
-                    }
-                    return;
-                }
-            } else {
-                break; //missing something, update needed
-            }
+    function blacklistEventHandler(event) {
+        let steamID = event.currentTarget.id.split("_")[1];
+        if (blacklist.includes(steamID)) {
+            return;
         }
-        let searchUrl = "https://steamcommunity.com/market/search/render/?start=0&count=30&search_descriptions=0&appid=753&category_753_Game[]=tag_app_" + myBadges[index].appId + "&category_753_cardborder[]=tag_cardborder_0&norender=1";
-        debugPrint(searchUrl);
-        let xhr = new XMLHttpRequest();
-        xhr.open("GET", searchUrl, true);
-        xhr.responseType = "json";
-        // eslint-disable-next-line
-        xhr.onload = function () {
-            if (stop) {
-                updateMessage("Interrupted by user");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-            let status = xhr.status;
-            if (status === 200) {
-                let searchResponse = xhr.response;
-                debugPrint(JSON.stringify(searchResponse));
-                if (searchResponse.success == true && searchResponse.total_count >= myBadges[index].maxCards) {
-                    let results = searchResponse.results;
-                    for (let cardnumber = 0; cardnumber < myBadges[index].maxCards; cardnumber++) {
-                        debugPrint("looking for card");
-                        debugPrint(myBadges[index].cards[cardnumber].item);
-                        for (let i = 0; i < results.length; i++) {
-                            debugPrint(results[i].name);
-                            if (results[i].name.trim().startsWith(myBadges[index].cards[cardnumber].item) || myBadges[index].cards[cardnumber].iconUrl.includes(results[i].asset_description.icon_url)) {
-                                debugPrint("found!");
-                                let classid = results[i].asset_description.classid;
-                                if (classIdsDB[myBadges[index].appId] === undefined) {
-                                    classIdsDB[myBadges[index].appId] = new Object();
-                                }
-                                let cardsClasses = classIdsDB[myBadges[index].appId];
-                                cardsClasses[myBadges[index].cards[cardnumber].item] = classid;
-                                break;
-                            }
-                        }
-                        if (!(classIdsDB.hasOwnProperty(myBadges[index].appId) && classIdsDB[myBadges[index].appId].hasOwnProperty(myBadges[index].cards[cardnumber].item))) {
-                            //still not found...
-                            updateMessage('Error getting classid for card "' + myBadges[index].cards[cardnumber].item + '" from ' + myBadges[index].appId + ", please report this!");
-                            hideThrobber();
-                            enableButton();
-                            let stopButton = document.getElementById("asf_stm_stop");
-                            stopButton.remove();
-                            return;
-                        }
-                    }
-                } else {
-                    updateMessage("Error getting card data for " + myBadges[index].appId + ", please report this!");
-                    hideThrobber();
-                    enableButton();
-                    let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
-                    return;
-                }
 
-                errors = 0;
-                index++;
-                if (index < myBadges.length) {
-                    setTimeout(
-                        (function (index) {
-                            return function () {
-                                getClassIDs(index);
-                            };
-                        })(index),
-                        weblimiter + errorLimiter * errors
-                    );
-                } else {
-                    debugPrint(JSON.stringify(classIdsDB));
-                    localStorage.setItem("Ryzhehvost.ASF.STM", JSON.stringify(classIdsDB));
-                    setTimeout(function () {
-                        GetCards(0, 0);
-                    }, weblimiter);
-                }
-                return;
-            } else {
-                errors++;
-            }
-            if ((status < 400 || status >= 500) && errors <= maxErrors) {
-                setTimeout(
-                    (function (index) {
-                        return function () {
-                            getClassIDs(index);
-                        };
-                    })(index),
-                    weblimiter + errorLimiter * errors
-                );
-            } else {
-                if (status != 200) {
-                    updateMessage("Error getting classid, ERROR " + status);
-                } else {
-                    updateMessage("Error getting classid, malformed json");
-                }
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-        };
-        // eslint-disable-next-line
-        xhr.onerror = function () {
-            if (stop) {
-                updateMessage("Interrupted by user");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-            errors++;
-            if (errors <= maxErrors) {
-                setTimeout(
-                    (function (index) {
-                        return function () {
-                            getClassIDs(index);
-                        };
-                    })(index),
-                    weblimiter + errorLimiter * errors
-                );
-                return;
-            } else {
-                debugPrint("error");
-                updateMessage("Error getting classid");
-                hideThrobber();
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
-                return;
-            }
-        };
-        xhr.send();
+        unsafeWindow.ShowConfirmDialog('CONFIRMATION', `Are you sure you want to blacklist bot ${steamID} ?`).done(function(){
+            blacklist.push(steamID);
+            SaveConfig();
+        });
     }
 
     function populateCards(item) {
-        let classList = "";
+        let nameList = "";
         let htmlCards = "";
         for (let j = 0; j < item.cards.length; j++) {
-            let itemIcon = item.cards[j].iconUrl + "/98x115";
-            let itemName = item.cards[j].item.substring(item.cards[j].item.indexOf("-") + 1);
+            let itemIcon = item.cards[j].iconUrl;
+            let itemName = item.cards[j].item;
             for (let k = 0; k < item.cards[j].count; k++) {
-                if (classList != "") {
-                    classList += ";";
+                if (nameList != "") {
+                    nameList += ";";
                 }
-                classList += classIdsDB[item.appId][item.cards[j].item];
+                nameList += encodeURIComponent(item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) + "." + item.appId + "-" + item.cards[j].item);
                 let cardTemplate = `
                           <div class="showcase_slot">
                             <img class="image-container" src="${itemIcon}/98x115">
@@ -297,21 +550,21 @@
         }
         return {
             htmlCards: htmlCards,
-            classList: classList,
+            nameList: nameList
         };
     }
 
-    function getClasses(item) {
-        let classes = "";
+    function getNames(item) {
+        let names = "";
         for (let j = 0; j < item.cards.length; j++) {
             for (let k = 0; k < item.cards[j].count; k++) {
-                if (classes != "") {
-                    classes += ";";
+                if (names != "") {
+                    names += ";";
                 }
-                classes += classIdsDB[item.appId][item.cards[j].item];
+                names += encodeURIComponent(item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) + "." + item.appId + "-" + item.cards[j].item);
             }
         }
-        return classes;
+        return names;
     }
 
     function updateTrade(row) {
@@ -320,7 +573,6 @@
         let splitUrl = tradeLink.href.split("&");
         let them = "";
         let you = "";
-        //let filterWidget = document.getElementById("asf_stm_filters_body");
         for (let i = 0; i < bots.Result[index].itemsToSend.length; i++) {
             let appId = bots.Result[index].itemsToSend[i].appId;
             let checkBox = document.getElementById("astm_" + appId);
@@ -328,11 +580,11 @@
                 if (you != "") {
                     you += ";";
                 }
-                you = you + getClasses(bots.Result[index].itemsToSend[i]);
+                you = you + getNames(bots.Result[index].itemsToSend[i]);
                 if (them != "") {
                     them += ";";
                 }
-                them = them + getClasses(bots.Result[index].itemsToReceive[i]);
+                them = them + getNames(bots.Result[index].itemsToReceive[i]);
             }
         }
         splitUrl[3] = "them=" + them;
@@ -358,7 +610,7 @@
         }
     }
 
-    function addMatchRow(index, botname) {
+    function addMatchRow(index) {
         debugPrint("addMatchRow " + index);
         let itemsToSend = bots.Result[index].itemsToSend;
         let itemsToReceive = bots.Result[index].itemsToReceive;
@@ -375,10 +627,14 @@
             }
             return 0;
         }
-        itemsToSend.sort(compareNames);
-        itemsToReceive.sort(compareNames);
 
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=stm";
+        if (globalSettings.sortByName) {
+            itemsToSend.sort(compareNames);
+            itemsToReceive.sort(compareNames);
+        }
+
+        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
+
         let globalYou = "";
         let globalThem = "";
         let matches = "";
@@ -414,7 +670,7 @@
             let sendResult = populateCards(itemsToSend[i]);
             let receiveResult = populateCards(itemToReceive);
 
-            let tradeUrlApp = tradeUrl + "&them=" + receiveResult.classList + "&you=" + sendResult.classList;
+            let tradeUrlApp = tradeUrl + "&them=" + receiveResult.nameList + "&you=" + sendResult.nameList;
 
             let matchTemplate = `
                   <div class="asf_stm_appid_${appId}" style="display:${display}">
@@ -444,7 +700,7 @@
                       </div>
                       <div class="showcase_slot profile_header">
                           <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_online badge_info_title badge_row_overlay ellipsis" style="height: 15px;">
-                            ${botname}
+                            ${bots.Result[index].Nickname}
                           </div>
                         ${receiveResult.htmlCards}
                       </div>
@@ -456,11 +712,11 @@
                 if (globalYou != "") {
                     globalYou += ";";
                 }
-                globalYou += sendResult.classList;
+                globalYou += sendResult.nameList;
                 if (globalThem != "") {
                     globalThem += ";";
                 }
-                globalThem += receiveResult.classList;
+                globalThem += receiveResult.nameList;
             }
         }
         let tradeUrlFull = tradeUrl + "&them=" + globalThem + "&you=" + globalYou;
@@ -483,8 +739,10 @@
                      </div>
                   </div>
                   <div class="badge_title">
-                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${botname}</a>${any}
+                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${bots.Result[index].Nickname}</a>${any}
                     &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalInventoryCount} items)</span>
+                    &ensp;<a id="blacklist_${bots.Result[index].SteamID}" data-tooltip-text="Blacklist this bot"  class="tooltip hover_tooltip"><img
+                    src="https://community.cloudflare.steamstatic.com/public/images/skin_1/iconForumBan.png?v=1"></a>
                   </div>
                 </div>
                 <div class="badge_title_rule"></div>
@@ -496,12 +754,15 @@
         template.innerHTML = rowTemplate.trim();
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         let newChild = template.content.firstChild;
+        newChild.querySelector(`#blacklist_${bots.Result[index].SteamID}`).addEventListener("click", blacklistEventHandler, true);
         mainContentDiv.appendChild(newChild);
         checkRow(newChild);
     }
 
     function calcState(badge) {
         //state 0 - less than max sets; state 1 - we have max sets, even out the rest, state 2 - all even
+        debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet +
+                   " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);
         if (badge.cards[badge.maxCards - 1].count == badge.maxSets) {
             if (badge.cards[0].count == badge.lastSet) {
                 return 2; //nothing to do
@@ -559,22 +820,20 @@
                                     let itemToSend = {
                                         item: myBadge.cards[k].item,
                                         count: 1,
-                                        class: classIdsDB[myBadge.appId][myBadge.cards[k].item],
-                                        iconUrl: myBadge.cards[k].iconUrl,
+                                        iconUrl: myBadge.cards[k].iconUrl
                                     };
                                     let itemToReceive = {
                                         item: theirBadge.cards[j].item,
                                         count: 1,
-                                        class: classIdsDB[theirBadge.appId][theirBadge.cards[j].item],
-                                        iconUrl: theirBadge.cards[j].iconUrl,
+                                        iconUrl: theirBadge.cards[j].iconUrl
                                     };
                                     //fill items to send
-                                    let sendmatch = itemsToSend.find((item) => item.appId == myBadge.appId);
+                                    let sendmatch = itemsToSend.find(item => item.appId == myBadge.appId);
                                     if (sendmatch == undefined) {
                                         let newMatch = {
                                             appId: myBadge.appId,
                                             title: myBadge.title,
-                                            cards: [itemToSend],
+                                            cards: [itemToSend]
                                         };
                                         itemsToSend.push(newMatch);
                                     } else {
@@ -600,7 +859,7 @@
                                         };
                                         itemsToReceive.push(newMatch);
                                     } else {
-                                        let existingCard = sendmatch.cards.find((a) => a.item == itemToReceive.item);
+                                        let existingCard = receiveMatch.cards.find((a) => a.item == itemToReceive.item);
                                         if (existingCard == undefined) {
                                             receiveMatch.cards.push(itemToReceive);
                                         } else {
@@ -615,17 +874,21 @@
                                     break; //found a match!
                                 }
                             }
+                            if (foundMatch) { //if we found something - we need to sort cards again and start over.
+                                myBadge.cards.sort((a, b) => b.count - a.count);
+                                myState = calcState(myBadge);
+                                debugPrint("new myState=" + myState);
+                            }
                         }
                     }
                 }
                 if (!foundMatch) {
                     break; //found no matches - move to next badge
                 }
-                myBadge.cards.sort((a, b) => b.count - a.count);
                 theirBadge.cards.sort((a, b) => b.count - a.count);
-                myState = calcState(myBadge);
             }
         }
+
         debugPrint("items to send");
         debugPrint(JSON.stringify(itemsToSend));
         debugPrint("items to receive");
@@ -633,8 +896,7 @@
         bots.Result[index].itemsToSend = itemsToSend;
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
-            //getUsername(index, callback);
-            addMatchRow(index, bots.Result[index].Nickname);
+            addMatchRow(index);
             callback();
         } else {
             debugPrint("no matches");
@@ -644,6 +906,35 @@
 
     function GetCards(index, userindex) {
         debugPrint("GetCards " + index + " : " + userindex);
+
+        if (userindex >= bots.Result.length) {
+            debugPrint("finished");
+            debugPrint(new Date(Date.now()));
+            hideThrobber();
+            hideMessage();
+            updateProgress(bots.Result.length - 1);
+            enableButton();
+            let stopButton = document.getElementById("asf_stm_stop");
+            stopButton.remove();
+            return;
+        }
+
+        if (userindex >=0 &&
+            (((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots) ||
+            ((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots) ||
+            (bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems) ||
+            ((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems)) ||
+            blacklist.includes(bots.Result[userindex].SteamID))) {
+            debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
+            debugPrint(((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots));
+            debugPrint(((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots));
+            debugPrint((bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems));
+            debugPrint(((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems)));
+            debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
+            GetCards(0, userindex+1);
+            return;
+        }
+
         if (index == 0) {
             botBadges.length = 0;
             botBadges = deepClone(myBadges);
@@ -662,7 +953,7 @@
                 updateProgress(userindex);
             }
 
-            let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId + "?l=english";
+            let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
             let xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
             xhr.responseType = "document";
@@ -679,6 +970,18 @@
                 let status = xhr.status;
                 if (status === 200) {
                     debugPrint("processing badge " + botBadges[index].appId);
+                    if (null !== xhr.response.documentElement.querySelector("body.private_profile")) {
+                        debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);
+                        setTimeout(
+                            (function (index, userindex) {
+                                return function () {
+                                    GetCards(index, userindex);
+                                };
+                            })(0, userindex+1),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                        );
+                        return;
+                    }
                     let badgeCards = xhr.response.documentElement.querySelectorAll(".badge_card_set_card");
                     if (badgeCards.length >= 5) {
                         errors = 0;
@@ -704,6 +1007,18 @@
                             botBadges[index].cards.push(newcard);
                         }
 
+                        //Check for same hash but different name, ask user to report
+                        if (userindex == -1) {
+                            for (let j = 0; j < botBadges[index].cards.length; j++) {
+                                for (let i = 0; i < botBadges[index].cards.length; i++) {
+                                    if (i != j && botBadges[index].cards[i].name != botBadges[index].cards[j].name &&
+                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) == botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)) {
+                                        unsafeWindow.ShowAlertDialog('WARNING', 'Different cards have same signature, please report this: ' + botBadges[index].appId);
+                                    }
+                                }
+                            }
+                        }
+
                         index++;
                         setTimeout(
                             (function (index, userindex) {
@@ -711,7 +1026,7 @@
                                     GetCards(index, userindex);
                                 };
                             })(index, userindex),
-                            weblimiter
+                            globalSettings.weblimiter
                         );
                         return;
                     } else {
@@ -722,14 +1037,14 @@
                 } else {
                     errors++;
                 }
-                if ((status < 400 || status >= 500) && errors <= maxErrors) {
+                if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
                     setTimeout(
                         (function (index, userindex) {
                             return function () {
                                 GetCards(index, userindex);
                             };
                         })(index, userindex),
-                        weblimiter + errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
                     );
                 } else {
                     if (status != 200) {
@@ -755,14 +1070,14 @@
                     return;
                 }
                 errors++;
-                if (errors <= maxErrors) {
+                if (errors <= globalSettings.maxErrors) {
                     setTimeout(
                         (function (index, userindex) {
                             return function () {
                                 GetCards(index, userindex);
                             };
                         })(index, userindex),
-                        weblimiter + errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
                     );
                     return;
                 } else {
@@ -812,37 +1127,26 @@
                 return;
             } else {
                 myBadges = deepClone(botBadges);
-                getClassIDs(0);
+                GetCards(0, 0);
                 return;
             }
         } else {
             debugPrint(bots.Result[userindex].SteamID);
             compareCards(userindex, function () {
-                if (userindex < bots.Result.length - 1) {
                     setTimeout(
                         (function (userindex) {
                             return function () {
                                 GetCards(0, userindex);
                             };
                         })(userindex + 1),
-                        weblimiter
+                        globalSettings.weblimiter
                     );
-                } else {
-                    debugPrint("finished");
-                    debugPrint(new Date(Date.now()));
-                    hideThrobber();
-                    hideMessage();
-                    updateProgress(bots.Result.length - 1);
-                    enableButton();
-                    let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
-                }
             });
         }
     }
 
     function getBadges(page) {
-        let url = "https://steamcommunity.com/" + myProfileLink + "/badges?p=" + page + "&l=english";
+        let url = "https://steamcommunity.com/" + myProfileLink + "/badges?p=" + page;
         let xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
         xhr.responseType = "document";
@@ -871,7 +1175,7 @@
                     if (badges[i].getElementsByClassName("owned").length > 0) {
                         //we only need badges where we have at least one card, and no special badges
                         if (!badges[i].parentElement.querySelector(".badge_row_overlay").href.endsWith("border=1")) {
-                            //ignore foil badges completely so far.
+                            //ignore foil badges completely for now. TODO: match foils too.
                             let appidNodes = badges[i].getElementsByClassName("card_drop_info_dialog");
                             if (appidNodes.length > 0) {
                                 let appidText = appidNodes[0].getAttribute("id");
@@ -903,7 +1207,7 @@
             } else {
                 errors++;
             }
-            if ((status < 400 || status >= 500) && errors <= maxErrors) {
+            if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
                 if (page <= maxPages) {
                     setTimeout(
                         (function (page) {
@@ -911,11 +1215,11 @@
                                 getBadges(page);
                             };
                         })(page),
-                        weblimiter + errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
                     );
                 } else {
                     debugPrint("all badge pages processed");
-                    debugPrint(weblimiter + errorLimiter * errors);
+                    debugPrint(globalSettings.weblimiter + globalSettings.errorLimiter * errors);
                     if (myBadges.length === 0) {
                         hideThrobber();
                         updateMessage("No cards to match");
@@ -926,7 +1230,7 @@
                     } else {
                         setTimeout(function () {
                             GetCards(0, -1);
-                        }, weblimiter + errorLimiter * errors);
+                        }, globalSettings.weblimiter + globalSettings.errorLimiter * errors);
                     }
                 }
             } else {
@@ -952,14 +1256,14 @@
                 return;
             }
             errors++;
-            if (errors <= maxErrors) {
+            if (errors <= globalSettings.maxErrors) {
                 setTimeout(
                     (function (page) {
                         return function () {
                             getBadges(page);
                         };
                     })(page),
-                    weblimiter + errorLimiter * errors
+                    globalSettings.weblimiter + globalSettings.errorLimiter * errors
                 );
             } else {
                 debugPrint("error getting badge page");
@@ -1029,6 +1333,7 @@
             fetchBots();
             return;
         }
+        bots.Result.sort(botSorter);
         disableButton();
         debugPrint(new Date(Date.now()));
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
@@ -1062,7 +1367,7 @@
           </div>
           <div id="asf_stm_filters" style="position: fixed; z-index: 1000; right: 5px; bottom: 45px; transition-duration: 500ms;
                    transition-timing-function: ease; margin-right: -50%; padding: 5px; max-width: 40%; display: inline-block; border-radius: 2px;
-                   background:${filterBackgroundColor}; color: #67c1f5;">
+                   background:${globalSettings.filterBackgroundColor}; color: #67c1f5;">
               <div style="white-space: nowrap;">Select:
 	          <a id="asf_stm_filter_all" class="commentthread_pagelinks">
 		        all
@@ -1097,6 +1402,42 @@
         getBadges(1);
     }
 
+    function botSorter(a, b) {
+        let result = 0;
+        for (let i = 0; i < globalSettings.sortBotsBy.length; i++) {
+            switch (globalSettings.sortBotsBy[i]) {
+                case 'MatchEverythingFirst':
+                    result = b.MatchEverything - a.MatchEverything;
+                    break;
+                case 'MatchEverythingLast':
+                    result = a.MatchEverything - b.MatchEverything;
+                    break;
+                case 'TotalGamesCountDesc':
+                    result = b.TotalGamesCount - a.TotalGamesCount;
+                    break;
+                case 'TotalGamesCountAsc':
+                    result = a.TotalGamesCount - b.TotalGamesCount;
+                    break;
+                case 'TotalItemsCountDesc':
+                    result = b.TotalItemsCount - a.TotalItemsCount;
+                    break;
+                case 'TotalItemsCountAsc':
+                    result = a.TotalItemsCount - b.TotalItemsCount;
+                    break;
+                case 'TotalInventoryCountDesc':
+                    result = b.TotalInventoryCount - a.TotalInventoryCount;
+                    break;
+                case 'TotalInventoryCountAsc':
+                    result = a.TotalInventoryCount - b.TotalInventoryCount;
+                    break;
+            }
+            if (result !== 0) {
+                break;
+            }
+        }
+        return result;
+    }
+
     function fetchBots() {
         let requestUrl = "https://asf.justarchi.net/Api/Listing/Bots";
         let requestFunc;
@@ -1122,23 +1463,7 @@
                     bots = JSON.parse(fixedJson);
                     bots.cacheTime = Date.now();
                     if (bots.Success) {
-                        //bots.filter(bot=>bot.matchable_cards===1||bot.matchable_foil_cards===1);  //I don't think this is really needed
-                        bots.Result.sort(function (a, b) {
-                            //sort received array as I like it. TODO: sort according to settings
-                            let result = b.MatchEverything - a.MatchEverything; //bots with MatchEverything go first
-                            if (result === 0) {
-                                result = b.TotalGamesCount - a.TotalGamesCount; //then by TotalGamesCount descending
-                            }
-                            if (result === 0) {
-                                result = b.TotalItemsCount - a.TotalItemsCount; //then by TotalItemsCounts descending
-                            }
-                            if (result === 0) {
-                                result = a.TotalInventoryCount - b.TotalInventoryCount; //then by TotalInventoryCount ascending
-                            }
-                            return result;
-                        });
                         debugPrint("found total " + bots.Result.length + " bots");
-
                         localStorage.setItem("Ryzhehvost.ASF.STM.BotCache", JSON.stringify(bots));
                         buttonPressedEvent();
                     } else {
@@ -1180,7 +1505,9 @@
             },
         });
     }
-
+//Main
+    LoadConfig();
+    localStorage.removeItem("Ryzhehvost.ASF.STM") //we used to store classid database here before, clean this up.
     if (document.getElementsByClassName("badge_details_set_favorite").length != 0) {
         let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
         let result = profileRegex.exec(document.location);
@@ -1203,7 +1530,7 @@
 
         let buttonDiv = document.createElement("div");
         buttonDiv.setAttribute("class", "profile_small_header_additional");
-        buttonDiv.setAttribute("style", "margin-top: 40px;");
+        buttonDiv.setAttribute("style", "margin-top: 40px; right: 70px");
         buttonDiv.setAttribute("id", "asf_stm_button_div");
         buttonDiv.setAttribute("title", "Scan ASF STM");
         let button = document.createElement("a");
@@ -1214,6 +1541,20 @@
         buttonDiv.appendChild(button);
         let anchor = document.getElementsByClassName("profile_small_header_texture")[0];
         anchor.appendChild(buttonDiv);
+        let confButtonDiv = document.createElement("div");
+        confButtonDiv.setAttribute("class", "profile_small_header_additional");
+        confButtonDiv.setAttribute("style", "margin-top: 40px;");
+        confButtonDiv.setAttribute("id", "asf_stm_config_div");
+        confButtonDiv.setAttribute("title", "Configuration");
+        let confButton = document.createElement("a");
+        confButton.setAttribute("class", "btnv6_blue_hoverfade btn_medium_thin");
+        confButton.setAttribute("id", "asf_stm_config");
+        confButton.appendChild(document.createElement("span"));
+        confButton.firstChild.appendChild(document.createTextNode("⚙️"));
+        confButtonDiv.appendChild(confButton);
+        anchor.appendChild(confButtonDiv);
+        confButton.addEventListener("click", ShowConfigDialog, false);
+
         enableButton();
 
         // add our styles to the document's style sheet
@@ -1229,6 +1570,237 @@
                 // no head yet, stick it whereever
                 document.documentElement.appendChild(node);
             }
+        }
+
+    } else {
+        //All code below is a modified version of SteamTrade Matcher Userscript by Tithen-Firion
+        //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
+
+        // MIT License
+        // Copyright (c) 2017 Tithen-Firion
+        // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+        // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+        // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+        function getRandomInt(min, max) {
+            "use strict";
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        function mySort(a, b) {
+            "use strict";
+            return parseInt(b.id) - parseInt(a.id);
+        }
+
+        ///// Steam functions /////
+
+        function restoreCookie(oldCookie) {
+            "use strict";
+            if (oldCookie) {
+                let now = new Date();
+                let time = now.getTime();
+                time += 15 * 24 * 60 * 60 * 1000;
+                now.setTime(time);
+                document.cookie = 'strTradeLastInventoryContext=' + oldCookie + '; expires=' + now.toUTCString() + '; path=/tradeoffer/';
+            }
+        }
+
+        function addCards(g_s, g_v) {
+            "use strict";
+            let tmpCards, inv, index, currentCards;
+            let failLater = false;
+            let cardTypes = [[], []];
+            g_v.Cards.forEach(function (requestedCards, i) {
+                tmpCards = {};
+                inv = g_v.Users[i].rgContexts[753][6].inventory;
+                inv.BuildInventoryDisplayElements();
+                inv = inv.rgInventory;
+                Object.keys(inv).forEach(function (item) {
+                    // add all matching cards to temporary dict
+                    index = requestedCards.findIndex(function (elem) {
+                        if (globalSettings.debug) {
+                            if (inv[item].icon_url !== inv[item].icon_url_large) {
+                                let tagindex = inv[item].tags.findIndex( (tag) => tag.category === "item_class");
+                                if ((tagindex > -1) && inv[item].tags[tagindex].internal_name === "item_class_2") {
+                                    debugPrint("DIFFERENT ICONS: " + inv[item].name + ":\n" + inv[item].icon_url + "\n" + inv[item].icon_url_large);
+                                }
+                            }
+                        }
+                        return ((elem.appid == inv[item].market_fee_app) && ((elem.name === inv[item].name) || inv[item].icon_url.endsWith(elem.hash)));
+                    });
+                    if (index > -1) {
+                        if (tmpCards[requestedCards[index].id] === undefined) {
+                            tmpCards[requestedCards[index].id] = [];
+                        }
+                        tmpCards[requestedCards[index].id].push({type: inv[item].type, element: inv[item].element, id: inv[item].id});
+                    }
+                });
+                if (g_s.order === 'SORT') {
+                    // sort cards descending by card id for each type
+                    Object.keys(tmpCards).forEach(function (id) {
+                        tmpCards[id].sort(mySort);
+                    });
+                }
+                // add cards to trade in order given by STM
+                requestedCards.forEach(function (elem) {
+                    currentCards = tmpCards[elem.id] || []; // all cards from inventory with requested signature
+                    if (currentCards.length === 0) {
+                        failLater = true;
+                    } else {
+                        index = 0;
+                        if (g_s.order === 'RANDOM') {
+                            // randomize index
+                            index = getRandomInt(0, currentCards.length);
+                        }
+                        unsafeWindow.MoveItemToTrade(currentCards[index].element);
+                        cardTypes[i].push(currentCards[index].type);
+                        currentCards.splice(index, 1);
+                    }
+                });
+            });
+
+            if(failLater || document.querySelectorAll('#your_slots .has_item').length != document.querySelectorAll('#their_slots .has_item').length) {
+                unsafeWindow.ShowAlertDialog('Items missing', 'Some items are missing and were not added to trade offer. Script aborting.');
+                throw ('Cards missing');
+            }
+
+            // check if item types match
+            cardTypes[1].forEach(function (type) {
+                index = cardTypes[0].indexOf(type);
+                if (index > -1) {
+                    cardTypes[0].splice(index, 1);
+                } else {
+                    unsafeWindow.ShowAlertDialog('Not 1:1 trade', 'This is not a valid 1:1 trade. Script aborting.');
+                    throw ('Not 1:1 trade');
+                }
+            });
+            restoreCookie(g_v.oldCookie);
+            // inject some JS to do something after trade offer is sent
+            if (g_s.doAfterTrade !== 'NOTHING') {
+                let functionToInject = 'let doAfterTrade = "' + g_s.doAfterTrade + '";';
+                functionToInject += '$J(document).ajaxSuccess(function (event, xhr, settings) {';
+                functionToInject += 'if (settings.url === "https://steamcommunity.com/tradeoffer/new/send") {';
+                functionToInject += 'if (doAfterTrade === "CLOSE_WINDOW") { window.close();';
+                functionToInject += '} else if (doAfterTrade === "CLICK_OK") {';
+                functionToInject += 'document.querySelector("div.newmodal_buttons > div").click(); } } });';
+                let script = document.createElement('script');
+                script.appendChild(document.createTextNode(functionToInject));
+                document.body.appendChild(script);
+            }
+            // send trade offer
+            if (g_s.autoSend) {
+                unsafeWindow.ToggleReady(true);
+                unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
+            }
+        }
+
+        function checkContexts(g_s, g_v) {
+            "use strict";
+            let ready = 0;
+            // check if Steam loaded everything needed
+            g_v.Users.forEach(function (user) {
+                if (user.rgContexts && user.rgContexts[753] && user.rgContexts[753][6]) {
+                    if (user.cLoadsInFlight === 0) {
+                        if (user.rgContexts[753][6].inventory) {
+                            ready += 1;
+                        } else {
+                            unsafeWindow.document.getElementById('trade_inventory_unavailable').show();
+                            unsafeWindow.document.getElementById('trade_inventory_pending').show();
+                            user.loadInventory(753, 6);
+                        }
+                    }
+                }
+            });
+
+            if (ready === 2) {
+                // select your inventory
+                unsafeWindow.TradePageSelectInventory(g_v.Users[0], 753, "6");
+                // set trade offer message
+                document.getElementById('trade_offer_note').value = g_s.tradeMessage;
+                try {
+                    addCards(g_s, g_v);
+                } catch (e) {
+                    // no matter what happens, restore old cookie
+                    restoreCookie(g_v.oldCookie);
+                    debugPrint(e);
+                }
+            } else {
+                window.setTimeout(checkContexts, 500, g_s, g_v);
+            }
+        }
+
+        function getUrlVars() {
+            "use strict";
+            let vars = [];
+            let hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            hashes.forEach(function (hash) {
+                hash = hash.split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            });
+            return vars;
+        }
+
+
+        ///// STM functions /////
+
+        function ParseCard(card) {
+            let decodedVar = decodeURIComponent(card);
+            const re = new RegExp("(.{5})\.([0-9]+)\-(.*)");
+            let result = decodedVar.match(re);
+            if (result && result.length == 4) {
+                return {
+                    id:card,
+                    appid:result[2],
+                    name: result[3],
+                    hash: result[1]
+                }
+            } else {
+                unsafeWindow.ShowAlertDialog('ASF STM Error', 'Failed to parse vars, please report it!');
+                throw ('Failed to parse');
+            }
+        }
+
+        try {
+
+            LoadConfig();
+
+            // get cards data from URL
+
+            let vars = getUrlVars();
+
+            let Cards = [
+                (vars.you
+                 ? vars.you.split(';').map(elem => ParseCard(elem))
+                 : []),
+                (vars.them
+                 ? vars.them.split(';').map(elem => ParseCard(elem))
+                 : [])
+            ];
+
+            if (Cards[0].length !== Cards[1].length) {
+                unsafeWindow.ShowAlertDialog(
+                    'Different items amount',
+                    'You\'ve requested ' + (Cards[0].length > Cards[1].length
+                                            ? 'less'
+                                            : 'more') + ' items than you give. Script aborting.'
+                );
+                throw ('Different items amount on both sides');
+            }
+
+            // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+            let oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+            if (oldCookie) {
+                oldCookie = oldCookie.split(';')[0];
+            }
+            document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
+
+            let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+            let global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+
+            window.setTimeout(checkContexts, 500, globalSettings, global_vars);
+        } catch (e) {
+            debugPrint(e);
         }
     }
 })();
