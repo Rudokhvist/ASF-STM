@@ -510,9 +510,9 @@
         throbber.setAttribute("style", "display: none;");
     }
 
-    function updateProgress(index) {
-        let bar = document.getElementById("asf_stm_progress");
-        let progress = 100 * ((index + 1) / bots.Result.length);
+    function updateProgress(index, total, zeroIndex=1) {
+        const bar = document.getElementById("asf_stm_progress");
+        let progress = 100 * index / (total - zeroIndex);
         bar.setAttribute("style", "width: " + progress + "%;");
     }
 
@@ -912,7 +912,7 @@
             debugPrint(new Date(Date.now()));
             hideThrobber();
             hideMessage();
-            updateProgress(bots.Result.length - 1);
+            updateProgress(bots.Result.length - 1, bots.Result.length);
             enableButton();
             let stopButton = document.getElementById("asf_stm_stop");
             stopButton.remove();
@@ -947,10 +947,11 @@
             if (userindex == -1) {
                 profileLink = myProfileLink;
                 updateMessage("Getting our data for badge " + (index + 1) + " of " + botBadges.length);
+                updateProgress(index, botBadges.length);
             } else {
                 profileLink = "profiles/" + bots.Result[userindex].SteamID;
                 updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
-                updateProgress(userindex);
+                updateProgress(userindex, botBadges.length)
             }
 
             let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
@@ -1164,6 +1165,7 @@
                 errors = 0;
                 debugPrint("processing page " + page);
                 updateMessage("Processing badges page " + page);
+                updateProgress(page, maxPages, 0);
                 if (page === 1) {
                     let pageLinks = xhr.response.documentElement.getElementsByClassName("pagelink");
                     if (pageLinks.length > 0) {
