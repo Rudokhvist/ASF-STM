@@ -510,10 +510,17 @@
         throbber.setAttribute("style", "display: none;");
     }
 
-    function updateProgress(index, total, zeroIndex=1) {
+    function updateProgress(index, total) {
         const bar = document.getElementById("asf_stm_progress");
-        let progress = 100 * index / (total - zeroIndex);
-        bar.setAttribute("style", "width: " + progress + "%;");
+        let progress = 0;
+        if (total > 0) {
+            progress = 100 * ((index + 1) / total);
+        }
+        bar.style.width = `${progress}%`;
+        bar.style.transitionDuration = "0.5s";
+        if (progress == 100) {
+            bar.style.transitionDuration = "0s";
+        }
     }
 
     function blacklistEventHandler(event) {
@@ -912,7 +919,7 @@
             debugPrint(new Date(Date.now()));
             hideThrobber();
             hideMessage();
-            updateProgress(bots.Result.length - 1, bots.Result.length);
+            updateProgress(1, 1); // limit reached, fill the bar
             enableButton();
             let stopButton = document.getElementById("asf_stm_stop");
             stopButton.remove();
@@ -951,7 +958,7 @@
             } else {
                 profileLink = "profiles/" + bots.Result[userindex].SteamID;
                 updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
-                updateProgress(userindex, botBadges.length)
+                updateProgress(userindex, bots.Result.length)
             }
 
             let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
@@ -1165,13 +1172,13 @@
                 errors = 0;
                 debugPrint("processing page " + page);
                 updateMessage("Processing badges page " + page);
-                updateProgress(page, maxPages, 0);
                 if (page === 1) {
                     let pageLinks = xhr.response.documentElement.getElementsByClassName("pagelink");
                     if (pageLinks.length > 0) {
                         maxPages = Number(pageLinks[pageLinks.length - 1].textContent.trim());
                     }
                 }
+                updateProgress(page - 1, maxPages); // substract 1 from page number as it starts from 1
                 let badges = xhr.response.documentElement.getElementsByClassName("badge_row_inner");
                 for (let i = 0; i < badges.length; i++) {
                     if (badges[i].getElementsByClassName("owned").length > 0) {
@@ -1362,7 +1369,7 @@
                 <span>🛑</span>
               </div>
               <div style="width: auto;overflow: hidden;" class="profile_xp_block_remaining_bar">
-                <div id="asf_stm_progress" class="profile_xp_block_remaining_bar_progress" style="width: 100%;">
+                <div id="asf_stm_progress" class="profile_xp_block_remaining_bar_progress" style="width: 100%;transition: width 0.5s ease-in-out 0s">
                 </div>
               </div>
             </div>
