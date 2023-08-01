@@ -1651,7 +1651,7 @@
                                 }
                             }
                         }
-                        return elem.appid === inv[item].market_fee_app && (elem.name === inv[item].name || inv[item].icon_url.endsWith(elem.hash));
+                        return elem.appid === inv[item].market_fee_app && (elem.name === inv[item].name || elem.appid + "-" + elem.name + " (Trading Card)" === inv[item].market_hash_name || inv[item].icon_url.endsWith(elem.hash));
                     });
                     if (index > -1) {
                         if (tmpCards[requestedCards[index].id] === undefined) {
