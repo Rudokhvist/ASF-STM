@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "checkJs": true,
+        "strict": true,
+        "target": "ES2020"
+    }
+}

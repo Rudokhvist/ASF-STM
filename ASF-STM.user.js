@@ -22,7 +22,7 @@
 
     let myProfileLink = "";
     let errors = 0;
-    let bots = null;
+    let /** @type {Bots | null} */ bots = null;
     let myBadges = [];
     let botBadges = [];
     let maxPages;
@@ -50,6 +50,11 @@
     };
 
     // helper function so Prettier could format template literals
+    /**
+     * @param {TemplateStringsArray} strings
+     * @param  {...string} values
+     * @returns {string}
+     */
     const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
     const css = html;
 
@@ -119,6 +124,9 @@
         }
     }
 
+    /**
+     * @param {string} msg
+     */
     function debugPrint(msg) {
         if (globalSettings.debug) {
             console.log(new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 }) + " : " + msg);
@@ -162,7 +170,7 @@
     function rgbaToHex(rgba) {
         let re = /rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
         let result = re.exec(rgba);
-        if (result === null || result.length != 5) {
+        if (result === null || result.length !== 5) {
             debugPrint("failed to parse color!");
             return ["#171a21", 0.8];
         }
@@ -655,7 +663,7 @@
         let globalThem = "";
         let matches = "";
         let any = "";
-        if (bots.Result[index].MatchEverything === 1) {
+        if (bots.Result[index].MatchEverything) {
             any = `&nbsp;<sup><span class="avatar_block_status_in-game" style="font-size: 8px; cursor:help" title="This bots trades for any cards within same set">&nbsp;ANY&nbsp;</span></sup>`;
         }
         for (let i = 0; i < itemsToSend.length; i++) {
@@ -672,7 +680,7 @@
             }
             //add filter
             let checkBox = document.getElementById("astm_" + appId);
-            if (checkBox === null) {
+            if (checkBox == null) {
                 let newFilter = `<span style="margin-right: 15px; white-space: nowrap; display: inline-block;"><input type="checkbox" id="astm_${appId}" checked /><label for="astm_${appId}">${gameName}</label></span>`;
                 let spanTemplate = document.createElement("template");
                 spanTemplate.innerHTML = newFilter.trim();
@@ -726,7 +734,7 @@
                     </div>
                 </div>
             `;
-            if (checkBox === null || checkBox.checked) {
+            if (checkBox == null || checkBox.checked) {
                 matches += matchTemplate;
                 if (globalYou != "") {
                     globalYou += ";";
@@ -828,7 +836,7 @@
                                     //that's fine for us
                                     debugPrint("it's a good trade for us");
                                     let theirInd = theirBadge.cards.findIndex((a) => a.item === myBadge.cards[k].item); //index of slot where they will receive card
-                                    if (bots.Result[index].MatchEverything === 0) {
+                                    if (bots.Result[index].MatchEverything) {
                                         //make sure it's neutral+ for them
                                         if (theirBadge.cards[theirInd].count >= theirBadge.cards[j].count) {
                                             debugPrint("Not fair for them");
@@ -942,15 +950,15 @@
 
         if (
             userindex >= 0 &&
-            ((bots.Result[userindex].MatchEverything === 1 && !globalSettings.anyBots) ||
-                (bots.Result[userindex].MatchEverything === 0 && !globalSettings.fairBots) ||
+            ((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
+                (bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
                 bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
                 (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
                 blacklist.includes(bots.Result[userindex].SteamID))
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
-            debugPrint(bots.Result[userindex].MatchEverything === 1 && !globalSettings.anyBots);
-            debugPrint(bots.Result[userindex].MatchEverything === 0 && !globalSettings.fairBots);
+            debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
+            debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.fairBots);
             debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
             debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
             debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
@@ -1012,7 +1020,7 @@
                         botBadges[index].maxCards = badgeCards.length;
                         for (let i = 0; i < badgeCards.length; i++) {
                             let quantityElement = badgeCards[i].querySelector(".badge_card_set_text_qty");
-                            let quantity = quantityElement === null ? "(0)" : quantityElement.innerText.trim();
+                            let quantity = quantityElement == null ? "(0)" : quantityElement.innerText.trim();
                             quantity = quantity.slice(1, -1);
                             let name = "";
                             badgeCards[i].querySelector(".badge_card_set_title").childNodes.forEach(function (element) {
@@ -1356,7 +1364,7 @@
     }
 
     function buttonPressedEvent() {
-        if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success != true || bots.cacheTime + botCacheTime < Date.now()) {
+        if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success !== true || bots.cacheTime + botCacheTime < Date.now()) {
             debugPrint("Bot cache invalidated");
             fetchBots();
             return;
@@ -1400,9 +1408,9 @@
             >
                 <div style="white-space: nowrap;">
                     Select:
-                    <a id="asf_stm_filter_all" class="commentthread_pagelinks"> all </a>
-                    <a id="asf_stm_filter_none" class="commentthread_pagelinks"> none </a>
-                    <a id="asf_stm_filter_invert" class="commentthread_pagelinks"> invert </a>
+                    <a id="asf_stm_filter_all" class="commentthread_pagelinks">all</a>
+                    <a id="asf_stm_filter_none" class="commentthread_pagelinks">none</a>
+                    <a id="asf_stm_filter_invert" class="commentthread_pagelinks">invert</a>
                 </div>
                 <hr />
                 <div id="asf_stm_filters_body">
@@ -1463,9 +1471,9 @@
         return result;
     }
 
-    function fetchBots() {
-        let requestUrl = "https://asf.justarchi.net/Api/Listing/Bots";
-        let requestFunc;
+    const fetchBots = () => {
+        const requestUrl = "https://asf.justarchi.net/Api/Listing/Bots";
+        let /** @type {typeof GM_xmlhttpRequest} */ requestFunc;
         if (typeof GM_xmlhttpRequest !== "function") {
             requestFunc = GM.xmlHttpRequest.bind(GM);
         } else {
@@ -1474,18 +1482,18 @@
         requestFunc({
             method: "GET",
             url: requestUrl,
-            onload: function (response) {
-                if (response.status != 200) {
+            onload: (response) => {
+                if (response.status !== 200) {
                     disableButton();
-                    document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
+                    document.getElementById("asf_stm_button_div")?.setAttribute("title", "Can't fetch list of bots");
                     debugPrint("can't fetch list of bots, ERROR=" + response.status);
                     debugPrint(JSON.stringify(response));
                     return;
                 }
                 try {
-                    let re = /("SteamID":)(\d+)/g;
-                    let fixedJson = response.response.replace(re, '$1"$2"'); //because fuck js
-                    bots = JSON.parse(fixedJson);
+                    const re = /("SteamID":)(\d+)/g;
+                    const fixedJson = response.response.replace(re, '$1"$2"'); //because fuck js
+                    bots = /** @type {Bots} */ (JSON.parse(fixedJson));
                     bots.cacheTime = Date.now();
                     if (bots.Success) {
                         debugPrint("found total " + bots.Result.length + " bots");
@@ -1494,7 +1502,7 @@
                     } else {
                         //ASF backend does not indicate success
                         disableButton();
-                        document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots, try later");
+                        document.getElementById("asf_stm_button_div")?.setAttribute("title", "Can't fetch list of bots, try later");
                         debugPrint("can't fetch list of bots");
                         debugPrint(bots.Message);
                         debugPrint(JSON.stringify(response));
@@ -1503,33 +1511,33 @@
                     return;
                 } catch (e) {
                     disableButton();
-                    document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots, try later");
+                    document.getElementById("asf_stm_button_div")?.setAttribute("title", "Can't fetch list of bots, try later");
                     debugPrint("can't fetch list of bots");
-                    debugPrint(e);
+                    debugPrint(/** @type {Error} */ (e).message);
                     debugPrint(JSON.stringify(response));
                     return;
                 }
             },
-            onerror: function (response) {
+            onerror: (response) => {
                 disableButton();
-                document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
+                document.getElementById("asf_stm_button_div")?.setAttribute("title", "Can't fetch list of bots");
                 debugPrint("can't fetch list of bots");
                 debugPrint(JSON.stringify(response));
             },
-            onabort: function (response) {
+            onabort: (response) => {
                 disableButton();
-                document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
+                document.getElementById("asf_stm_button_div")?.setAttribute("title", "Can't fetch list of bots");
                 debugPrint("can't fetch list of bots - aborted");
                 debugPrint(JSON.stringify(response));
             },
-            ontimeout: function (response) {
+            ontimeout: (response) => {
                 disableButton();
-                document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
+                document.getElementById("asf_stm_button_div")?.setAttribute("title", "Can't fetch list of bots");
                 debugPrint("can't fetch list of bots - timeout");
                 debugPrint(JSON.stringify(response));
             },
         });
-    }
+    };
 
     //Main
     LoadConfig();
@@ -1607,11 +1615,21 @@
         // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
         // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+        /**
+         * @param {number} min
+         * @param {number} max
+         * @returns {number}
+         */
         function getRandomInt(min, max) {
             "use strict";
             return Math.floor(Math.random() * (max - min)) + min;
         }
 
+        /**
+         * @param {TmpCard} a
+         * @param {TmpCard} b
+         * @returns {number}
+         */
         function mySort(a, b) {
             "use strict";
             return parseInt(b.id) - parseInt(a.id);
@@ -1619,6 +1637,9 @@
 
         ///// Steam functions /////
 
+        /**
+         * @param {string} oldCookie
+         */
         function restoreCookie(oldCookie) {
             "use strict";
             if (oldCookie) {
@@ -1630,44 +1651,53 @@
             }
         }
 
-        function addCards(g_s, g_v) {
+        /**
+         * @param {GlobalSettings} g_s
+         * @param {GlobalVars} g_v
+         */
+        const addCards = (g_s, g_v) => {
             "use strict";
-            let tmpCards, inv, index, currentCards;
+            let /** @type {TmpCards} */ tmpCards;
+            let /** @type {Inventory | Assets} */ inv;
+            let /** @type {number} */ index;
+            let /** @type {TmpCard[]} */ currentCards;
             let failLater = false;
-            let cardTypes = [[], []];
-            g_v.Cards.forEach(function (requestedCards, i) {
+            let /** @type {[string[], string[]]} */ cardTypes = [[], []];
+            g_v.Cards.forEach((requestedCards, i) => {
                 tmpCards = {};
                 inv = g_v.Users[i].rgContexts[753][6].inventory;
                 inv.BuildInventoryDisplayElements();
                 inv = inv.rgInventory;
-                Object.keys(inv).forEach(function (item) {
+                // TypeScript Type Narrowing Error with `forEach`
+                // https://stackoverflow.com/a/63224887/1751997
+                Object.values(inv).forEach((item) => {
                     // add all matching cards to temporary dict
-                    index = requestedCards.findIndex(function (elem) {
-                        if (globalSettings.debug) {
-                            if (inv[item].icon_url !== inv[item].icon_url_large) {
-                                let tagindex = inv[item].tags.findIndex((tag) => tag.category === "item_class");
-                                if (tagindex > -1 && inv[item].tags[tagindex].internal_name === "item_class_2") {
-                                    debugPrint("DIFFERENT ICONS: " + inv[item].name + ":\n" + inv[item].icon_url + "\n" + inv[item].icon_url_large);
+                    index = requestedCards.findIndex((elem) => {
+                        if (g_s.debug) {
+                            if (item.icon_url != item.icon_url_large) {
+                                let tagindex = item.tags.findIndex((tag) => tag.category === "item_class");
+                                if (tagindex > -1 && item.tags[tagindex].internal_name === "item_class_2") {
+                                    debugPrint("DIFFERENT ICONS: " + item.name + ":\n" + item.icon_url + "\n" + item.icon_url_large);
                                 }
                             }
                         }
-                        return elem.appid === inv[item].market_fee_app && (elem.name === inv[item].name || elem.appid + "-" + elem.name + " (Trading Card)" === inv[item].market_hash_name || inv[item].icon_url.endsWith(elem.hash));
+                        return elem.appid === item.market_fee_app && (elem.name === item.name || elem.appid + "-" + elem.name + " (Trading Card)" === item.market_hash_name || item.icon_url.endsWith(elem.hash));
                     });
                     if (index > -1) {
                         if (tmpCards[requestedCards[index].id] === undefined) {
                             tmpCards[requestedCards[index].id] = [];
                         }
-                        tmpCards[requestedCards[index].id].push({ type: inv[item].type, element: inv[item].element, id: inv[item].id });
+                        tmpCards[requestedCards[index].id].push({ type: item.type, element: item.element, id: item.id });
                     }
                 });
                 if (g_s.order === "SORT") {
                     // sort cards descending by card id for each type
-                    Object.keys(tmpCards).forEach(function (id) {
+                    Object.keys(tmpCards).forEach((id) => {
                         tmpCards[id].sort(mySort);
                     });
                 }
                 // add cards to trade in order given by STM
-                requestedCards.forEach(function (elem) {
+                requestedCards.forEach((elem) => {
                     currentCards = tmpCards[elem.id] || []; // all cards from inventory with requested signature
                     if (currentCards.length === 0) {
                         failLater = true;
@@ -1686,24 +1716,24 @@
 
             if (failLater || document.querySelectorAll("#your_slots .has_item").length != document.querySelectorAll("#their_slots .has_item").length) {
                 unsafeWindow.ShowAlertDialog("Items missing", "Some items are missing and were not added to trade offer. Script aborting.");
-                throw "Cards missing";
+                throw new Error("Cards missing");
             }
 
             // check if item types match
-            cardTypes[1].forEach(function (type) {
+            cardTypes[1].forEach((type) => {
                 index = cardTypes[0].indexOf(type);
                 if (index > -1) {
                     cardTypes[0].splice(index, 1);
                 } else {
                     unsafeWindow.ShowAlertDialog("Not 1:1 trade", "This is not a valid 1:1 trade. Script aborting.");
-                    throw "Not 1:1 trade";
+                    throw new Error("Not 1:1 trade");
                 }
             });
             restoreCookie(g_v.oldCookie);
             // inject some JS to do something after trade offer is sent
             if (g_s.doAfterTrade !== "NOTHING") {
                 let functionToInject = 'let doAfterTrade = "' + g_s.doAfterTrade + '";';
-                functionToInject += "$J(document).ajaxSuccess(function (event, xhr, settings) {";
+                functionToInject += "$J(document).ajaxSuccess((event, xhr, settings) => {";
                 functionToInject += 'if (settings.url === "https://steamcommunity.com/tradeoffer/new/send") {';
                 functionToInject += 'if (doAfterTrade === "CLOSE_WINDOW") { window.close();';
                 functionToInject += '} else if (doAfterTrade === "CLICK_OK") {';
@@ -1717,7 +1747,7 @@
                 unsafeWindow.ToggleReady(true);
                 unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
             }
-        }
+        };
 
         function checkContexts(g_s, g_v) {
             "use strict";
