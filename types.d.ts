@@ -24,6 +24,7 @@ interface Assets {
 interface Bot {
     MatchEverything: boolean;
     SteamID: number;
+    SteamIDText: string;
 }
 
 interface Bots {

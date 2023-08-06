@@ -657,7 +657,7 @@
             itemsToReceive.sort(compareNames);
         }
 
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
+        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamIDText) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
 
         let globalYou = "";
         let globalThem = "";
@@ -760,16 +760,16 @@
                         </div>
                         <div style="float: left;" class="">
                             <div class="user_avatar playerAvatar online">
-                                <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">
+                                <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamIDText}">
                                     <img src="https://avatars.cloudflare.steamstatic.com/${bots.Result[index].AvatarHash === null ? "fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb" : bots.Result[index].AvatarHash}.jpg" />
                                 </a>
                             </div>
                         </div>
                         <div class="badge_title">
-                            &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${bots.Result[index].Nickname}</a>${any} &ensp;<span style="color: #8F98A0;"
+                            &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamIDText}">${bots.Result[index].Nickname}</a>${any} &ensp;<span style="color: #8F98A0;"
                                 >(${bots.Result[index].TotalInventoryCount} items)</span
                             >
-                            &ensp;<a id="blacklist_${bots.Result[index].SteamID}" data-tooltip-text="Blacklist this bot" class="tooltip hover_tooltip"
+                            &ensp;<a id="blacklist_${bots.Result[index].SteamIDText}" data-tooltip-text="Blacklist this bot" class="tooltip hover_tooltip"
                                 ><img src="https://community.cloudflare.steamstatic.com/public/images/skin_1/iconForumBan.png?v=1"
                             /></a>
                         </div>
@@ -783,7 +783,7 @@
         template.innerHTML = rowTemplate.trim();
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         let newChild = template.content.firstChild;
-        newChild.querySelector(`#blacklist_${bots.Result[index].SteamID}`).addEventListener("click", blacklistEventHandler, true);
+        newChild.querySelector(`#blacklist_${bots.Result[index].SteamIDText}`).addEventListener("click", blacklistEventHandler, true);
         mainContentDiv.appendChild(newChild);
         checkRow(newChild);
     }
@@ -954,14 +954,14 @@
                 (bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
                 bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
                 (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
-                blacklist.includes(bots.Result[userindex].SteamID))
+                blacklist.includes(bots.Result[userindex].SteamIDText))
         ) {
-            debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
+            debugPrint("Ignoring bot " + bots.Result[userindex].SteamIDText);
             debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
             debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.fairBots);
             debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
             debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
-            debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
+            debugPrint(blacklist.includes(bots.Result[userindex].SteamIDText));
             GetCards(0, userindex + 1);
             return;
         }
@@ -980,7 +980,7 @@
                 updateMessage("Getting our data for badge " + (index + 1) + " of " + botBadges.length);
                 updateProgress(index, botBadges.length);
             } else {
-                profileLink = "profiles/" + bots.Result[userindex].SteamID;
+                profileLink = "profiles/" + bots.Result[userindex].SteamIDText;
                 updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
                 updateProgress(userindex, bots.Result.length);
             }
@@ -1003,7 +1003,7 @@
                 if (status === 200) {
                     debugPrint("processing badge " + botBadges[index].appId);
                     if (null !== xhr.response.documentElement.querySelector("body.private_profile")) {
-                        debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);
+                        debugPrint("bot has private profile:" + bots.Result[userindex].SteamIDText);
                         setTimeout(
                             (function (index, userindex) {
                                 return function () {
@@ -1166,7 +1166,7 @@
                 return;
             }
         } else {
-            debugPrint(bots.Result[userindex].SteamID);
+            debugPrint(bots.Result[userindex].SteamIDText);
             compareCards(userindex, function () {
                 setTimeout(
                     (function (userindex) {
@@ -1491,9 +1491,7 @@
                     return;
                 }
                 try {
-                    const re = /("SteamID":)(\d+)/g;
-                    const fixedJson = response.response.replace(re, '$1"$2"'); //because fuck js
-                    bots = /** @type {Bots} */ (JSON.parse(fixedJson));
+                    bots = /** @type {Bots} */ (JSON.parse(response.response));
                     bots.cacheTime = Date.now();
                     if (bots.Success) {
                         debugPrint("found total " + bots.Result.length + " bots");
