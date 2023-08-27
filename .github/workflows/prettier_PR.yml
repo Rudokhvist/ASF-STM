@@ -21,5 +21,6 @@ jobs:
         uses: creyD/prettier_action@latest
         with:
           # This part is also where you can pass other options, for example:
+          prettier_version: 2.8.1
           prettier_options: --write **/*.{js,md}
           only_changed: True
