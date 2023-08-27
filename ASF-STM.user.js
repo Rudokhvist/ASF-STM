@@ -31,22 +31,22 @@
     let globalSettings = null;
     let blacklist = [];
     let defaultSettings = {
-        anyBots:true,
-        fairBots:true,
+        anyBots: true,
+        fairBots: true,
         sortByName: true,
-        sortBotsBy: ["MatchEverythingFirst","TotalGamesCountDesc","TotalItemsCountDesc","TotalInventoryCountAsc", "None"],
+        sortBotsBy: ["MatchEverythingFirst", "TotalGamesCountDesc", "TotalItemsCountDesc", "TotalInventoryCountAsc", "None"],
         botMinItems: 0,
         botMaxItems: 0,
-        weblimiter:300,
-        errorLimiter:30000,
-        debug:false,
-        maxErrors:3,
-        filterBackgroundColor:"rgba(23,26,33,0.8)",
+        weblimiter: 300,
+        errorLimiter: 30000,
+        debug: false,
+        maxErrors: 3,
+        filterBackgroundColor: "rgba(23,26,33,0.8)",
         // for trade offer
-        tradeMessage:'ASF STM Matcher',
-        autoSend:false,
-        doAfterTrade:'NOTHING',
-        order:'AS_IS',
+        tradeMessage: "ASF STM Matcher",
+        autoSend: false,
+        doAfterTrade: "NOTHING",
+        order: "AS_IS",
     };
 
     //styles
@@ -143,33 +143,33 @@
 
     function textToArray(text) {
         let res = [];
-        text.split(",").forEach(function(elem) {
+        text.split(",").forEach(function (elem) {
             if (/^\d+$/.test(elem.trim())) {
                 res.push(elem.trim());
             }
         });
-       return res;
+        return res;
     }
 
     function hexToRgba(hex) {
-        return 'rgba('+[Number("0x"+hex.substring(1,3)), Number("0x"+hex.substring(3,5)), Number("0x"+hex.substring(5,7))].join(',')+',1)';
+        return "rgba(" + [Number("0x" + hex.substring(1, 3)), Number("0x" + hex.substring(3, 5)), Number("0x" + hex.substring(5, 7))].join(",") + ",1)";
     }
 
     function rgbaToHex(rgba) {
-        let re=/rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
+        let re = /rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
         let result = re.exec(rgba);
         if (result === null || result.length != 5) {
             debugPrint("failed to parse color!");
-            return ["#171a21",0.8];
+            return ["#171a21", 0.8];
         }
-        return ["#"+Number(result[1]).toString(16)+Number(result[2]).toString(16)+Number(result[3]).toString(16),Number(result[4])];
+        return ["#" + Number(result[1]).toString(16) + Number(result[2]).toString(16) + Number(result[3]).toString(16), Number(result[4])];
     }
 
-    function mixAlpha(rgba,alpha) {
+    function mixAlpha(rgba, alpha) {
         let re = /(rgba\([.\d]+,[.\d]+,[.\d]+,)([.\d]+)\)/g;
         let result = re.exec(rgba);
         if (result) {
-            return result[1]+alpha+")";
+            return result[1] + alpha + ")";
         }
         debugPrint("failed to mix alpha!");
         return rgba;
@@ -188,10 +188,10 @@
                   <fieldset style="padding-top: 0px;"><legend>BOTS TO MATCH</legend>
                   <div style="margin-bottom: 6px;"> Match with "Any"
               bots:&nbsp;<input style="background-color: #171d25; color: white;"
-               id="anyBots" ${globalSettings.anyBots ? "checked=\"checked\"" : ""} type="checkbox">&nbsp;Match
+               id="anyBots" ${globalSettings.anyBots ? 'checked="checked"' : ""} type="checkbox">&nbsp;Match
               with "Fair"
               bots:&nbsp;<input style="background-color: #171d25; color: white;"
-               id="fairBots" ${globalSettings.fairBots ? "checked=\"checked\"" : ""} type="checkbox"><br>
+               id="fairBots" ${globalSettings.fairBots ? 'checked="checked"' : ""} type="checkbox"><br>
                   </div>
                   <div style="margin-bottom: 6px;"> Minimum
               items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
@@ -206,71 +206,71 @@
                   <span style="width: 80px; display: inline-block;">Sort bots by:</span>
                   <select style="background-color: #171d25; color: white;"
                id="sortBotsBy0">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[0]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[0] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
               bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[0]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[0] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[0] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
               ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[0]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[0] === "None" ? 'selected="selected"' : ""}>None</option>
                   </select>
                   </div>
                   <div style="margin-bottom: 6px;"><span
                style="width: 80px; display: inline-block;"> …then by:</span>
                   <select style="background-color: #171d25; color: white;" id="sortBotsBy1">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[1]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[1] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
               bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[1]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[1] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[1] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
               ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[1]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[1] === "None" ? 'selected="selected"' : ""}>None</option>
                   </select>
                   </div>
                   <div style="margin-bottom: 6px;"><span
                style="width: 80px; display: inline-block;">…then by:</span>
                   <select style="background-color: #171d25; color: white;"
                id="sortBotsBy2">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[2]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[2] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
               bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[2]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[2] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[2] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
               ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[2]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[2] === "None" ? 'selected="selected"' : ""}>None</option>
                   </select>
                   </div>
                   <div style="margin-bottom: 6px;"><span
                style="width: 80px; display: inline-block;">…then by:</span>
                   <select style="background-color: #171d25; color: white;"
                id="sortBotsBy3">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[3]==="MatchEverythingFirst" ? "selected=\"selected\"" : ""}>"Any"
+                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[3] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
               bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[3]==="MatchEverythingLast" ? "selected=\"selected\"" : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountDesc" ? "selected=\"selected\"" : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3]==="TotalGamesCountAsc" ? "selected=\"selected\"" : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountDesc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[3] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
+                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
+                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
+                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[3] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
               descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3]==="TotalItemsCountAsc" ? "selected=\"selected\"" : ""}>Total matchable items count,
+                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
               ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountDesc" ? "selected=\"selected\"" : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3]==="TotalInventoryCountAsc" ? "selected=\"selected\"" : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[3]==="None" ? "selected=\"selected\"" : ""}>None</option>
+                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
+                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
+                  <option value="None" ${globalSettings.sortBotsBy[3] === "None" ? 'selected="selected"' : ""}>None</option>
                   </select>
                   </div>
                   </fieldset>
@@ -286,14 +286,14 @@
                   <div style="margin-bottom: 6px;"> Sort results by game
               name:&nbsp;<input
                style="border: medium none transparent; background-color: #171d25; color: white;"
-               id="sortByName" ${globalSettings.sortByName ? "checked=\"checked\"" : ""} type="checkbox">
+               id="sortByName" ${globalSettings.sortByName ? 'checked="checked"' : ""} type="checkbox">
                   </div>
                   </fieldset>
                   <fieldset style="padding-top: 0px;"><legend>SETTINGS</legend>
                     <fieldset style="padding-top: 0px; float: right; width:200px;"><legend>DEVELOPER</legend>
                                     <div style="margin-bottom: 6px;">Debug:&nbsp;
                                     <input style="background-color: #171d25; color: white;"
-                                    id="debug" type="checkbox"  ${globalSettings.debug ? "checked=\"checked\"" : ""} >
+                                    id="debug" type="checkbox"  ${globalSettings.debug ? 'checked="checked"' : ""} >
                                      <a class="tooltip hover_tooltip" data-tooltip-text="Enable additional output to console">
                                      <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
                                     </div>
@@ -332,10 +332,10 @@
                   <label for="after-trade">After
               trade...</label>
                   <select style="background-color: #171d25; color: white;" name="after-trade" id="doAfterTrade">
-                  <option value="NOTHING" ${globalSettings.doAfterTrade == "NOTHING" ? "selected=\"selected\"" : ""}>Do
+                  <option value="NOTHING" ${globalSettings.doAfterTrade == "NOTHING" ? 'selected="selected"' : ""}>Do
               Nothing</option>
-                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade == "CLOSE_WINDOW" ? "selected=\"selected\"" : ""}>Close window</option>
-                  <option value="CLICK_OK" ${globalSettings.doAfterTrade == "CLICK_OK" ? "selected=\"selected\"" : ""}>Click OK</option>
+                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade == "CLOSE_WINDOW" ? 'selected="selected"' : ""}>Close window</option>
+                  <option value="CLICK_OK" ${globalSettings.doAfterTrade == "CLICK_OK" ? 'selected="selected"' : ""}>Click OK</option>
                   </select>
                   <a class="tooltip hover_tooltip" data-tooltip-html="
                   <p>Determines what happens when you complete a trade offer.</p>
@@ -356,9 +356,9 @@
               order</label>
                   <select style="background-color: #171d25; color: white;" class="form-control" name="cards-order"
                id="order">
-                  <option value="SORT" ${globalSettings.order == "SORT" ? "selected=\"selected\"" : ""}>Sorted</option>
-                  <option value="RANDOM" ${globalSettings.order == "RANDOM" ? "selected=\"selected\"" : ""}>Random</option>
-                  <option value="AS_IS" ${globalSettings.order == "AS_IS" ? "selected=\"selected\"" : ""}>As is</option>
+                  <option value="SORT" ${globalSettings.order == "SORT" ? 'selected="selected"' : ""}>Sorted</option>
+                  <option value="RANDOM" ${globalSettings.order == "RANDOM" ? 'selected="selected"' : ""}>Random</option>
+                  <option value="AS_IS" ${globalSettings.order == "AS_IS" ? 'selected="selected"' : ""}>As is</option>
                   </select>
                    <a class="tooltip hover_tooltip" data-tooltip-html="
                    <p>Determines which card is added to trade.</p>
@@ -380,7 +380,7 @@
                   <fieldset><legend>AUTO-SEND TRADE OFFER
                   </legend>
                   <label for="auto-send"><input style="background-color: #171d25; color: white;" name="auto-send"
-               id="autoSend" value="1" type="checkbox" ${globalSettings.autoSend ? "checked=\"checked\"" : ""}>
+               id="autoSend" value="1" type="checkbox" ${globalSettings.autoSend ? 'checked="checked"' : ""}>
               Enable</label>
                    <a class="tooltip hover_tooltip" data-tooltip-text="Makes it possible for the script to automatically send
               trade offers without any action on your side. This is not recommended
@@ -407,13 +407,13 @@
         templateElement.innerHTML = configDialogTemplate.trim();
         let configDialog = templateElement.content.firstChild;
 
-        unsafeWindow.ShowConfirmDialog('ASF STM Configuration', configDialog, "Save","Cancel","Reset").done(function(button) {
-            if (button === 'OK') {
+        unsafeWindow.ShowConfirmDialog("ASF STM Configuration", configDialog, "Save", "Cancel", "Reset").done(function (button) {
+            if (button === "OK") {
                 globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
                 globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
                 globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
                 let newsortBotsBy = [];
-                configDialog.querySelectorAll("[id^=sortBotsBy").forEach(function(elem){
+                configDialog.querySelectorAll("[id^=sortBotsBy").forEach(function (elem) {
                     newsortBotsBy.push(elem.selectedOptions[0].value);
                 });
                 globalSettings.sortBotsBy = newsortBotsBy;
@@ -428,24 +428,22 @@
                 globalSettings.debug = configDialog.querySelector("#debug").checked;
                 let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
                 globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
-                globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value),
-                                                                configDialog.querySelector("#filterBackgroundAlpha").value);
+                globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value), configDialog.querySelector("#filterBackgroundAlpha").value);
                 globalSettings.tradeMessage = configDialog.querySelector("#tradeMessage").value;
                 globalSettings.autoSend = configDialog.querySelector("#autoSend").checked;
                 globalSettings.doAfterTrade = configDialog.querySelector("#doAfterTrade").selectedOptions[0].value;
                 globalSettings.order = configDialog.querySelector("#order").selectedOptions[0].value;
                 blacklist = textToArray(configDialog.querySelector("#blacklist").value);
                 SaveConfig();
-                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload. Do you want to reload the page?').done(function(){
-                    document.location.reload()
+                unsafeWindow.ShowConfirmDialog("CONFIRMATION", "Some changes may not work prior to page reload. Do you want to reload the page?").done(function () {
+                    document.location.reload();
                 });
-
             } else {
-                unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Are you sure you want to restore default settings?').done(function(){
+                unsafeWindow.ShowConfirmDialog("CONFIRMATION", "Are you sure you want to restore default settings?").done(function () {
                     ResetConfig();
                     SaveConfig();
-                    unsafeWindow.ShowConfirmDialog('CONFIRMATION', 'Some changes may not work prior to page reload. Do you want to reload the page?').done(function(){
-                        document.location.reload()
+                    unsafeWindow.ShowConfirmDialog("CONFIRMATION", "Some changes may not work prior to page reload. Do you want to reload the page?").done(function () {
+                        document.location.reload();
                     });
                 });
             }
@@ -458,22 +456,22 @@
     }
 
     function SaveConfig() {
-        localStorage.setItem("Ryzhehvost.ASF.STM.Settings",JSON.stringify(globalSettings));
-        localStorage.setItem("Ryzhehvost.ASF.STM.Blacklist",JSON.stringify(blacklist));
+        localStorage.setItem("Ryzhehvost.ASF.STM.Settings", JSON.stringify(globalSettings));
+        localStorage.setItem("Ryzhehvost.ASF.STM.Blacklist", JSON.stringify(blacklist));
     }
 
     function LoadConfig() {
         globalSettings = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Settings"));
         blacklist = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Blacklist"));
         if (globalSettings === null) {
-          ResetConfig();
+            ResetConfig();
         }
         if (blacklist === null) {
             blacklist = [];
         }
         //vaildate config
-        Object.keys(defaultSettings).forEach(function(key){
-            if (!globalSettings.hasOwnProperty(key)){
+        Object.keys(defaultSettings).forEach(function (key) {
+            if (!globalSettings.hasOwnProperty(key)) {
                 globalSettings[key] = defaultSettings[defaultSettings];
             }
         });
@@ -529,7 +527,7 @@
             return;
         }
 
-        unsafeWindow.ShowConfirmDialog('CONFIRMATION', `Are you sure you want to blacklist bot ${steamID} ?`).done(function(){
+        unsafeWindow.ShowConfirmDialog("CONFIRMATION", `Are you sure you want to blacklist bot ${steamID} ?`).done(function () {
             blacklist.push(steamID);
             SaveConfig();
         });
@@ -557,7 +555,7 @@
         }
         return {
             htmlCards: htmlCards,
-            nameList: nameList
+            nameList: nameList,
         };
     }
 
@@ -768,8 +766,7 @@
 
     function calcState(badge) {
         //state 0 - less than max sets; state 1 - we have max sets, even out the rest, state 2 - all even
-        debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet +
-                   " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);
+        debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet + " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);
         if (badge.cards[badge.maxCards - 1].count == badge.maxSets) {
             if (badge.cards[0].count == badge.lastSet) {
                 return 2; //nothing to do
@@ -827,20 +824,20 @@
                                     let itemToSend = {
                                         item: myBadge.cards[k].item,
                                         count: 1,
-                                        iconUrl: myBadge.cards[k].iconUrl
+                                        iconUrl: myBadge.cards[k].iconUrl,
                                     };
                                     let itemToReceive = {
                                         item: theirBadge.cards[j].item,
                                         count: 1,
-                                        iconUrl: theirBadge.cards[j].iconUrl
+                                        iconUrl: theirBadge.cards[j].iconUrl,
                                     };
                                     //fill items to send
-                                    let sendmatch = itemsToSend.find(item => item.appId == myBadge.appId);
+                                    let sendmatch = itemsToSend.find((item) => item.appId == myBadge.appId);
                                     if (sendmatch == undefined) {
                                         let newMatch = {
                                             appId: myBadge.appId,
                                             title: myBadge.title,
-                                            cards: [itemToSend]
+                                            cards: [itemToSend],
                                         };
                                         itemsToSend.push(newMatch);
                                     } else {
@@ -881,7 +878,8 @@
                                     break; //found a match!
                                 }
                             }
-                            if (foundMatch) { //if we found something - we need to sort cards again and start over.
+                            if (foundMatch) {
+                                //if we found something - we need to sort cards again and start over.
                                 myBadge.cards.sort((a, b) => b.count - a.count);
                                 myState = calcState(myBadge);
                                 debugPrint("new myState=" + myState);
@@ -926,19 +924,21 @@
             return;
         }
 
-        if (userindex >=0 &&
-            (((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots) ||
-            ((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots) ||
-            (bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems) ||
-            ((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems)) ||
-            blacklist.includes(bots.Result[userindex].SteamID))) {
+        if (
+            userindex >= 0 &&
+            ((bots.Result[userindex].MatchEverything == 1 && !globalSettings.anyBots) ||
+                (bots.Result[userindex].MatchEverything == 0 && !globalSettings.fairBots) ||
+                bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
+                (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
+                blacklist.includes(bots.Result[userindex].SteamID))
+        ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
-            debugPrint(((bots.Result[userindex].MatchEverything == 1) && !globalSettings.anyBots));
-            debugPrint(((bots.Result[userindex].MatchEverything == 0) && !globalSettings.fairBots));
-            debugPrint((bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems));
-            debugPrint(((globalSettings.botMaxItems > 0) && (bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems)));
+            debugPrint(bots.Result[userindex].MatchEverything == 1 && !globalSettings.anyBots);
+            debugPrint(bots.Result[userindex].MatchEverything == 0 && !globalSettings.fairBots);
+            debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
+            debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
             debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
-            GetCards(0, userindex+1);
+            GetCards(0, userindex + 1);
             return;
         }
 
@@ -958,7 +958,7 @@
             } else {
                 profileLink = "profiles/" + bots.Result[userindex].SteamID;
                 updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
-                updateProgress(userindex, bots.Result.length)
+                updateProgress(userindex, bots.Result.length);
             }
 
             let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
@@ -985,8 +985,8 @@
                                 return function () {
                                     GetCards(index, userindex);
                                 };
-                            })(0, userindex+1),
-                            globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                            })(0, userindex + 1),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                         );
                         return;
                     }
@@ -1019,9 +1019,12 @@
                         if (userindex == -1) {
                             for (let j = 0; j < botBadges[index].cards.length; j++) {
                                 for (let i = 0; i < botBadges[index].cards.length; i++) {
-                                    if (i != j && botBadges[index].cards[i].name != botBadges[index].cards[j].name &&
-                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) == botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)) {
-                                        unsafeWindow.ShowAlertDialog('WARNING', 'Different cards have same signature, please report this: ' + botBadges[index].appId);
+                                    if (
+                                        i != j &&
+                                        botBadges[index].cards[i].name != botBadges[index].cards[j].name &&
+                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) == botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)
+                                    ) {
+                                        unsafeWindow.ShowAlertDialog("WARNING", "Different cards have same signature, please report this: " + botBadges[index].appId);
                                     }
                                 }
                             }
@@ -1034,7 +1037,7 @@
                                     GetCards(index, userindex);
                                 };
                             })(index, userindex),
-                            globalSettings.weblimiter
+                            globalSettings.weblimiter,
                         );
                         return;
                     } else {
@@ -1052,7 +1055,7 @@
                                 GetCards(index, userindex);
                             };
                         })(index, userindex),
-                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                 } else {
                     if (status != 200) {
@@ -1085,7 +1088,7 @@
                                 GetCards(index, userindex);
                             };
                         })(index, userindex),
-                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                     return;
                 } else {
@@ -1141,14 +1144,14 @@
         } else {
             debugPrint(bots.Result[userindex].SteamID);
             compareCards(userindex, function () {
-                    setTimeout(
-                        (function (userindex) {
-                            return function () {
-                                GetCards(0, userindex);
-                            };
-                        })(userindex + 1),
-                        globalSettings.weblimiter
-                    );
+                setTimeout(
+                    (function (userindex) {
+                        return function () {
+                            GetCards(0, userindex);
+                        };
+                    })(userindex + 1),
+                    globalSettings.weblimiter,
+                );
             });
         }
     }
@@ -1224,7 +1227,7 @@
                                 getBadges(page);
                             };
                         })(page),
-                        globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                 } else {
                     debugPrint("all badge pages processed");
@@ -1237,9 +1240,12 @@
                         stopButton.remove();
                         return;
                     } else {
-                        setTimeout(function () {
-                            GetCards(0, -1);
-                        }, globalSettings.weblimiter + globalSettings.errorLimiter * errors);
+                        setTimeout(
+                            function () {
+                                GetCards(0, -1);
+                            },
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                        );
                     }
                 }
             } else {
@@ -1272,7 +1278,7 @@
                             getBadges(page);
                         };
                     })(page),
-                    globalSettings.weblimiter + globalSettings.errorLimiter * errors
+                    globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                 );
             } else {
                 debugPrint("error getting badge page");
@@ -1415,28 +1421,28 @@
         let result = 0;
         for (let i = 0; i < globalSettings.sortBotsBy.length; i++) {
             switch (globalSettings.sortBotsBy[i]) {
-                case 'MatchEverythingFirst':
+                case "MatchEverythingFirst":
                     result = b.MatchEverything - a.MatchEverything;
                     break;
-                case 'MatchEverythingLast':
+                case "MatchEverythingLast":
                     result = a.MatchEverything - b.MatchEverything;
                     break;
-                case 'TotalGamesCountDesc':
+                case "TotalGamesCountDesc":
                     result = b.TotalGamesCount - a.TotalGamesCount;
                     break;
-                case 'TotalGamesCountAsc':
+                case "TotalGamesCountAsc":
                     result = a.TotalGamesCount - b.TotalGamesCount;
                     break;
-                case 'TotalItemsCountDesc':
+                case "TotalItemsCountDesc":
                     result = b.TotalItemsCount - a.TotalItemsCount;
                     break;
-                case 'TotalItemsCountAsc':
+                case "TotalItemsCountAsc":
                     result = a.TotalItemsCount - b.TotalItemsCount;
                     break;
-                case 'TotalInventoryCountDesc':
+                case "TotalInventoryCountDesc":
                     result = b.TotalInventoryCount - a.TotalInventoryCount;
                     break;
-                case 'TotalInventoryCountAsc':
+                case "TotalInventoryCountAsc":
                     result = a.TotalInventoryCount - b.TotalInventoryCount;
                     break;
             }
@@ -1514,9 +1520,9 @@
             },
         });
     }
-//Main
+    //Main
     LoadConfig();
-    localStorage.removeItem("Ryzhehvost.ASF.STM") //we used to store classid database here before, clean this up.
+    localStorage.removeItem("Ryzhehvost.ASF.STM"); //we used to store classid database here before, clean this up.
     if (document.getElementsByClassName("badge_details_set_favorite").length != 0) {
         let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
         let result = profileRegex.exec(document.location);
@@ -1580,7 +1586,6 @@
                 document.documentElement.appendChild(node);
             }
         }
-
     } else {
         //All code below is a modified version of SteamTrade Matcher Userscript by Tithen-Firion
         //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
@@ -1610,7 +1615,7 @@
                 let time = now.getTime();
                 time += 15 * 24 * 60 * 60 * 1000;
                 now.setTime(time);
-                document.cookie = 'strTradeLastInventoryContext=' + oldCookie + '; expires=' + now.toUTCString() + '; path=/tradeoffer/';
+                document.cookie = "strTradeLastInventoryContext=" + oldCookie + "; expires=" + now.toUTCString() + "; path=/tradeoffer/";
             }
         }
 
@@ -1629,22 +1634,22 @@
                     index = requestedCards.findIndex(function (elem) {
                         if (globalSettings.debug) {
                             if (inv[item].icon_url !== inv[item].icon_url_large) {
-                                let tagindex = inv[item].tags.findIndex( (tag) => tag.category === "item_class");
-                                if ((tagindex > -1) && inv[item].tags[tagindex].internal_name === "item_class_2") {
+                                let tagindex = inv[item].tags.findIndex((tag) => tag.category === "item_class");
+                                if (tagindex > -1 && inv[item].tags[tagindex].internal_name === "item_class_2") {
                                     debugPrint("DIFFERENT ICONS: " + inv[item].name + ":\n" + inv[item].icon_url + "\n" + inv[item].icon_url_large);
                                 }
                             }
                         }
-                        return ((elem.appid == inv[item].market_fee_app) && ((elem.name === inv[item].name) || inv[item].icon_url.endsWith(elem.hash)));
+                        return elem.appid == inv[item].market_fee_app && (elem.name === inv[item].name || inv[item].icon_url.endsWith(elem.hash));
                     });
                     if (index > -1) {
                         if (tmpCards[requestedCards[index].id] === undefined) {
                             tmpCards[requestedCards[index].id] = [];
                         }
-                        tmpCards[requestedCards[index].id].push({type: inv[item].type, element: inv[item].element, id: inv[item].id});
+                        tmpCards[requestedCards[index].id].push({ type: inv[item].type, element: inv[item].element, id: inv[item].id });
                     }
                 });
-                if (g_s.order === 'SORT') {
+                if (g_s.order === "SORT") {
                     // sort cards descending by card id for each type
                     Object.keys(tmpCards).forEach(function (id) {
                         tmpCards[id].sort(mySort);
@@ -1657,7 +1662,7 @@
                         failLater = true;
                     } else {
                         index = 0;
-                        if (g_s.order === 'RANDOM') {
+                        if (g_s.order === "RANDOM") {
                             // randomize index
                             index = getRandomInt(0, currentCards.length);
                         }
@@ -1668,9 +1673,9 @@
                 });
             });
 
-            if(failLater || document.querySelectorAll('#your_slots .has_item').length != document.querySelectorAll('#their_slots .has_item').length) {
-                unsafeWindow.ShowAlertDialog('Items missing', 'Some items are missing and were not added to trade offer. Script aborting.');
-                throw ('Cards missing');
+            if (failLater || document.querySelectorAll("#your_slots .has_item").length != document.querySelectorAll("#their_slots .has_item").length) {
+                unsafeWindow.ShowAlertDialog("Items missing", "Some items are missing and were not added to trade offer. Script aborting.");
+                throw "Cards missing";
             }
 
             // check if item types match
@@ -1679,20 +1684,20 @@
                 if (index > -1) {
                     cardTypes[0].splice(index, 1);
                 } else {
-                    unsafeWindow.ShowAlertDialog('Not 1:1 trade', 'This is not a valid 1:1 trade. Script aborting.');
-                    throw ('Not 1:1 trade');
+                    unsafeWindow.ShowAlertDialog("Not 1:1 trade", "This is not a valid 1:1 trade. Script aborting.");
+                    throw "Not 1:1 trade";
                 }
             });
             restoreCookie(g_v.oldCookie);
             // inject some JS to do something after trade offer is sent
-            if (g_s.doAfterTrade !== 'NOTHING') {
+            if (g_s.doAfterTrade !== "NOTHING") {
                 let functionToInject = 'let doAfterTrade = "' + g_s.doAfterTrade + '";';
-                functionToInject += '$J(document).ajaxSuccess(function (event, xhr, settings) {';
+                functionToInject += "$J(document).ajaxSuccess(function (event, xhr, settings) {";
                 functionToInject += 'if (settings.url === "https://steamcommunity.com/tradeoffer/new/send") {';
                 functionToInject += 'if (doAfterTrade === "CLOSE_WINDOW") { window.close();';
                 functionToInject += '} else if (doAfterTrade === "CLICK_OK") {';
                 functionToInject += 'document.querySelector("div.newmodal_buttons > div").click(); } } });';
-                let script = document.createElement('script');
+                let script = document.createElement("script");
                 script.appendChild(document.createTextNode(functionToInject));
                 document.body.appendChild(script);
             }
@@ -1713,8 +1718,8 @@
                         if (user.rgContexts[753][6].inventory) {
                             ready += 1;
                         } else {
-                            unsafeWindow.document.getElementById('trade_inventory_unavailable').show();
-                            unsafeWindow.document.getElementById('trade_inventory_pending').show();
+                            unsafeWindow.document.getElementById("trade_inventory_unavailable").show();
+                            unsafeWindow.document.getElementById("trade_inventory_pending").show();
                             user.loadInventory(753, 6);
                         }
                     }
@@ -1725,7 +1730,7 @@
                 // select your inventory
                 unsafeWindow.TradePageSelectInventory(g_v.Users[0], 753, "6");
                 // set trade offer message
-                document.getElementById('trade_offer_note').value = g_s.tradeMessage;
+                document.getElementById("trade_offer_note").value = g_s.tradeMessage;
                 try {
                     addCards(g_s, g_v);
                 } catch (e) {
@@ -1741,71 +1746,57 @@
         function getUrlVars() {
             "use strict";
             let vars = [];
-            let hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            let hashes = window.location.href.slice(window.location.href.indexOf("?") + 1).split("&");
             hashes.forEach(function (hash) {
-                hash = hash.split('=');
+                hash = hash.split("=");
                 vars.push(hash[0]);
                 vars[hash[0]] = hash[1];
             });
             return vars;
         }
 
-
         ///// STM functions /////
 
         function ParseCard(card) {
             let decodedVar = decodeURIComponent(card);
-            const re = new RegExp("(.{5})\.([0-9]+)\-(.*)");
+            const re = new RegExp("(.{5}).([0-9]+)-(.*)");
             let result = decodedVar.match(re);
             if (result && result.length == 4) {
                 return {
-                    id:card,
-                    appid:result[2],
+                    id: card,
+                    appid: result[2],
                     name: result[3],
-                    hash: result[1]
-                }
+                    hash: result[1],
+                };
             } else {
-                unsafeWindow.ShowAlertDialog('ASF STM Error', 'Failed to parse vars, please report it!');
-                throw ('Failed to parse');
+                unsafeWindow.ShowAlertDialog("ASF STM Error", "Failed to parse vars, please report it!");
+                throw "Failed to parse";
             }
         }
 
         try {
-
             LoadConfig();
 
             // get cards data from URL
 
             let vars = getUrlVars();
 
-            let Cards = [
-                (vars.you
-                 ? vars.you.split(';').map(elem => ParseCard(elem))
-                 : []),
-                (vars.them
-                 ? vars.them.split(';').map(elem => ParseCard(elem))
-                 : [])
-            ];
+            let Cards = [vars.you ? vars.you.split(";").map((elem) => ParseCard(elem)) : [], vars.them ? vars.them.split(";").map((elem) => ParseCard(elem)) : []];
 
             if (Cards[0].length !== Cards[1].length) {
-                unsafeWindow.ShowAlertDialog(
-                    'Different items amount',
-                    'You\'ve requested ' + (Cards[0].length > Cards[1].length
-                                            ? 'less'
-                                            : 'more') + ' items than you give. Script aborting.'
-                );
-                throw ('Different items amount on both sides');
+                unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
+                throw "Different items amount on both sides";
             }
 
             // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-            let oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+            let oldCookie = document.cookie.split("strTradeLastInventoryContext=")[1];
             if (oldCookie) {
-                oldCookie = oldCookie.split(';')[0];
+                oldCookie = oldCookie.split(";")[0];
             }
-            document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
+            document.cookie = "strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/";
 
             let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-            let global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+            let global_vars = { Users: Users, oldCookie: oldCookie, Cards: Cards };
 
             window.setTimeout(checkContexts, 500, globalSettings, global_vars);
         } catch (e) {
