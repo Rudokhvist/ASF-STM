@@ -657,7 +657,7 @@
             let filterWidget = document.getElementById("asf_stm_filters_body");
             let placeholder = document.getElementById("asf_stm_placeholder");
             if (placeholder != null) {
-                placeholder.remove();
+                placeholder.parentNode.removeChild(placeholder);
             }
             //add filter
             let checkBox = document.getElementById("astm_" + appId);
@@ -920,7 +920,7 @@
             updateProgress(1, 1); // limit reached, fill the bar
             enableButton();
             let stopButton = document.getElementById("asf_stm_stop");
-            stopButton.remove();
+            stopButton.parentNode.removeChild(stopButton);
             return;
         }
 
@@ -972,7 +972,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
                 let status = xhr.status;
@@ -1066,7 +1066,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
             };
@@ -1077,7 +1077,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
                 errors++;
@@ -1097,7 +1097,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
             };
@@ -1134,7 +1134,7 @@
                 updateMessage("No cards to match");
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             } else {
                 myBadges = deepClone(botBadges);
@@ -1167,7 +1167,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
             let status = xhr.status;
@@ -1237,7 +1237,7 @@
                         updateMessage("No cards to match");
                         enableButton();
                         let stopButton = document.getElementById("asf_stm_stop");
-                        stopButton.remove();
+                        stopButton.parentNode.removeChild(stopButton);
                         return;
                     } else {
                         setTimeout(
@@ -1257,7 +1257,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
         };
@@ -1267,7 +1267,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
             errors++;
@@ -1286,7 +1286,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
         };
