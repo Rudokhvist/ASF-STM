@@ -654,7 +654,7 @@
             itemsToReceive.sort(compareNames);
         }
 
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm4";
+        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
         debugPrint(tradeUrl);
 
         let globalYou = "";
@@ -1661,7 +1661,7 @@
             }
         }
     } else {
-        //All code below is a modified version of SteamTrade Matcher Userscript by Tithen-Firion
+        //Code below is a heavily modified version of SteamTrade Matcher Userscript by Tithen-Firion
         //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
 
         // MIT License
@@ -1823,11 +1823,10 @@
 
         function getUrlVars() {
             "use strict";
-            let vars = [];
+            let vars = {};
             let hashes = window.location.href.slice(window.location.href.indexOf("?") + 1).split("&");
             hashes.forEach(function (hash) {
                 hash = hash.split("=");
-                vars.push(hash[0]);
                 vars[hash[0]] = hash[1];
             });
             return vars;
@@ -1853,14 +1852,40 @@
         }
 
         try {
-            if (window.location.href.includes("source=asfstm4")) {
+            if (window.location.href.includes("source=asfstm")) {
                 LoadConfig();
                 let params = LoadParams();
-                // get cards data from URL
 
                 let vars = getUrlVars();
 
-                let Cards = [vars.you ? vars.you.split(";").map((elem) => ParseCard(elem)) : [], vars.them ? vars.them.split(";").map((elem) => ParseCard(elem)) : []];
+                if (vars.match == undefined) {
+                    throw new Error("missing url parameter");
+                }
+                let filter = [];
+                if (vars.match == "all") {
+                    filter = params.filter;
+                } else {
+                    if (Number(vars.match) == NaN) {
+                        throw new Error("invalid url parameter");
+                    }
+                    filter.push(Number(vars.match));
+                }
+
+                let Cards = [[],[]];
+                let matches = params.matches[vars.partner];
+                if (matches == undefined) {
+                    throw new Error("no matches with this partner");
+                }
+                for (let i = 0; i<filter.length; i++) {
+                    let appid = filter[i];
+
+                    if (matches[appid] == undefined) {
+                        throw new Error("no such appid in matches: " + appid);
+                    }
+
+                    Cards[0] = Cards[0].concat(matches[appid].send.map(card => ParseCard(params.cardNames[card])));
+                    Cards[1] = Cards[1].concat(matches[appid].receive.map(card => ParseCard(params.cardNames[card])));
+                }
 
                 if (Cards[0].length !== Cards[1].length) {
                     unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
