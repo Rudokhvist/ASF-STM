@@ -48,6 +48,11 @@
         doAfterTrade: "NOTHING",
         order: "AS_IS",
     };
+    let cardNames = new Set();
+    let tradeParams = {
+        matches:{},
+        filter:[]
+    }
 
     //styles
     const css = `
@@ -477,6 +482,17 @@
         });
     }
 
+    function SaveParams() {
+        if (tradeParams.cardNames === undefined) {
+            tradeParams.cardNames = Array.from(cardNames);
+        }
+        localStorage.setItem("Ryzhehvost.ASF.STM.Params", JSON.stringify(tradeParams));
+    }
+
+    function LoadParams() {
+        return JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Params"));
+    }
+
     function enableButton() {
         let buttonDiv = document.getElementById("asf_stm_button_div");
         buttonDiv.setAttribute("class", "profile_small_header_additional");
@@ -638,7 +654,8 @@
             itemsToReceive.sort(compareNames);
         }
 
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
+        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm4";
+        debugPrint(tradeUrl);
 
         let globalYou = "";
         let globalThem = "";
@@ -666,6 +683,7 @@
                 let spanTemplate = document.createElement("template");
                 spanTemplate.innerHTML = newFilter.trim();
                 filterWidget.appendChild(spanTemplate.content.firstChild);
+                tradeParams.filter.push(Number(appId));
             } else {
                 if (checkBox.checked == false) {
                     display = "none";
@@ -776,6 +794,37 @@
         } else {
             return 0; //less than max sets
         }
+    }
+
+    function storeMatches(steamID,itemsToSend,itemsToReceive) {
+        let partner = getPartner(steamID);
+        tradeParams.matches[partner] = {};
+        for (let i=0; i<itemsToSend.length; i++) {
+            if (tradeParams.matches[partner][itemsToSend[i].appId] == undefined) {
+                tradeParams.matches[partner][itemsToSend[i].appId] = {send:[],receive:[]}
+            }
+            for (let c=0; c<itemsToSend[i].cards.length; c++) {
+                for (let a=0; a<itemsToSend[i].cards[c].count; a++) {
+                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].iconUrl.substring(itemsToSend[i].cards[c].iconUrl.length - 5) + "." + itemsToSend[i].appId + "-" + itemsToSend[i].cards[c].item)
+                    tradeParams.matches[partner][itemsToSend[i].appId].send.push(cardID);
+                }
+            }
+        }
+        for (let i=0; i<itemsToReceive.length; i++) {
+            if (tradeParams.matches[partner][itemsToReceive[i].appId] == undefined) {
+                throw new Error("Sent and received appIDs don't match!");
+            }
+            for (let c=0; c<itemsToReceive[i].cards.length; c++) {
+                for (let a=0; a<itemsToReceive[i].cards[c].count; a++) {
+                    let cardID = tradeParams.cardNames.indexOf(itemsToReceive[i].cards[c].iconUrl.substring(itemsToReceive[i].cards[c].iconUrl.length - 5) + "." + itemsToReceive[i].appId + "-" + itemsToReceive[i].cards[c].item)
+                    tradeParams.matches[partner][itemsToReceive[i].appId].receive.push(cardID);
+                }
+            }
+            if (tradeParams.matches[partner][itemsToReceive[i].appId].send.length != tradeParams.matches[partner][itemsToReceive[i].appId].receive.length) {
+                throw new Error("Sent and received card count don't match for " + tradeParams.matches[partner][itemsToReceive[i].appId] + " !");
+            }
+        }
+        SaveParams();
     }
 
     function compareCards(index, callback) {
@@ -901,6 +950,7 @@
         bots.Result[index].itemsToSend = itemsToSend;
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
+            storeMatches(bots.Result[index].SteamID,itemsToSend,itemsToReceive);
             addMatchRow(index);
             callback();
         } else {
@@ -1013,6 +1063,10 @@
                             };
                             debugPrint(JSON.stringify(newcard));
                             botBadges[index].cards.push(newcard);
+                            if (userindex == -1) {
+                                //maybe save whole hash with .split("/")[5] ?
+                                cardNames.add(icon.substring(icon.length - 5) + "." + botBadges[index].appId + "-" + name);
+                            }
                         }
 
                         //Check for same hash but different name, ask user to report
@@ -1061,7 +1115,15 @@
                     if (status != 200) {
                         updateMessage("Error getting badge data, ERROR " + status);
                     } else {
-                        updateMessage("Error getting badge data, malformed HTML");
+                        debugPrint("Error getting badge data, malformed HTML. Ignoring badge " + botBadges[index].appId);
+                        setTimeout(
+                        (function (index, userindex) {
+                            return function () {
+                                GetCards(index, userindex);
+                            };
+                        })(index, userindex),
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                    );
                     }
                     hideThrobber();
                     enableButton();
@@ -1137,6 +1199,7 @@
                 stopButton.parentNode.removeChild(stopButton);
                 return;
             } else {
+                SaveParams();
                 myBadges = deepClone(botBadges);
                 GetCards(0, 0);
                 return;
@@ -1297,9 +1360,20 @@
         let appId = event.target.id.split("_")[1];
         let matches = document.getElementsByClassName("asf_stm_appid_" + appId);
         for (let i = 0; i < matches.length; i++) {
+            if (event.target.checked != "none") {
+                if (!tradeParams.filter.includes(appId)) {
+                    tradeParams.filter.push(Number(appId));
+                }
+            } else {
+                var index = tradeParams.filter.indexOf(appId);
+                if (index !== -1) {
+                    tradeParams.filter.splice(index, 1);
+                }
+            }
             matches[i].style.display = event.target.checked ? "inline-block" : "none";
             checkRow(matches[i].parentElement.parentElement);
         }
+        SaveParams();
     }
 
     function filterSwitchesHandler(event) {
@@ -1640,6 +1714,10 @@
                                 }
                             }
                         }
+                        if (elem.appid == inv[item].market_fee_app) {
+                            debugPrint ("name: "+ inv[item].name + ":"+elem.name );
+                            debugPrint ("icon: "+ inv[item].icon_url + ":"+elem.hash );
+                        }
                         return elem.appid == inv[item].market_fee_app && (elem.name === inv[item].name || inv[item].icon_url.endsWith(elem.hash));
                     });
                     if (index > -1) {
@@ -1775,30 +1853,32 @@
         }
 
         try {
-            LoadConfig();
+            if (window.location.href.includes("source=asfstm4")) {
+                LoadConfig();
+                let params = LoadParams();
+                // get cards data from URL
 
-            // get cards data from URL
+                let vars = getUrlVars();
 
-            let vars = getUrlVars();
+                let Cards = [vars.you ? vars.you.split(";").map((elem) => ParseCard(elem)) : [], vars.them ? vars.them.split(";").map((elem) => ParseCard(elem)) : []];
 
-            let Cards = [vars.you ? vars.you.split(";").map((elem) => ParseCard(elem)) : [], vars.them ? vars.them.split(";").map((elem) => ParseCard(elem)) : []];
+                if (Cards[0].length !== Cards[1].length) {
+                    unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
+                    throw "Different items amount on both sides";
+                }
 
-            if (Cards[0].length !== Cards[1].length) {
-                unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
-                throw "Different items amount on both sides";
+                // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+                let oldCookie = document.cookie.split("strTradeLastInventoryContext=")[1];
+                if (oldCookie) {
+                    oldCookie = oldCookie.split(";")[0];
+                }
+                document.cookie = "strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/";
+
+                let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+                let global_vars = { Users: Users, oldCookie: oldCookie, Cards: Cards };
+
+                window.setTimeout(checkContexts, 500, globalSettings, global_vars);
             }
-
-            // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-            let oldCookie = document.cookie.split("strTradeLastInventoryContext=")[1];
-            if (oldCookie) {
-                oldCookie = oldCookie.split(";")[0];
-            }
-            document.cookie = "strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/";
-
-            let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-            let global_vars = { Users: Users, oldCookie: oldCookie, Cards: Cards };
-
-            window.setTimeout(checkContexts, 500, globalSettings, global_vars);
         } catch (e) {
             debugPrint(e);
         }
