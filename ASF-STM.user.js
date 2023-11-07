@@ -652,12 +652,12 @@
                   <div class="asf_stm_appid_${appId}" style="display:${display}">
                     <div class="badge_row is_link goo_untradable_note showcase_slot">
                       <div class="notLoggedInText">
-                        <img style="background-color: var(--gpStoreDarkerGrey);" height=69 alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg"
-                        onerror="this.onerror=null;this.src='https://store.akamai.steamstatic.com/public/images/gift/steam_logo_digitalgiftcard.png'">
-                        <div>
-                          <div title="View badge progress for this game">
-                            <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">${gameName}</a>
-                          </div>
+                        <div title="View badge progress for this game">
+                          <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">
+                            <img style="background-color: var(--gpStoreDarkerGrey);" height=69 alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg"
+                            onerror="this.onerror=null;this.src='https://store.akamai.steamstatic.com/public/images/gift/steam_logo_digitalgiftcard.png'">
+                            <div>${gameName}</div>
+                          </a>
                         </div>
                         <div class="btn_darkblue_white_innerfade btn_medium">
                           <span>
