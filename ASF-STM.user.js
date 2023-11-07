@@ -50,9 +50,9 @@
     };
     let cardNames = new Set();
     let tradeParams = {
-        matches:{},
-        filter:[]
-    }
+        matches: {},
+        filter: [],
+    };
 
     //styles
     const css = `
@@ -741,27 +741,27 @@
         }
     }
 
-    function storeMatches(steamID,itemsToSend,itemsToReceive) {
+    function storeMatches(steamID, itemsToSend, itemsToReceive) {
         let partner = getPartner(steamID);
         tradeParams.matches[partner] = {};
-        for (let i=0; i<itemsToSend.length; i++) {
+        for (let i = 0; i < itemsToSend.length; i++) {
             if (tradeParams.matches[partner][itemsToSend[i].appId] === undefined) {
-                tradeParams.matches[partner][itemsToSend[i].appId] = {send:[],receive:[]}
+                tradeParams.matches[partner][itemsToSend[i].appId] = { send: [], receive: [] };
             }
-            for (let c=0; c<itemsToSend[i].cards.length; c++) {
-                for (let a=0; a<itemsToSend[i].cards[c].count; a++) {
-                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].iconUrl.substring(itemsToSend[i].cards[c].iconUrl.length - 5) + "." + itemsToSend[i].appId + "-" + itemsToSend[i].cards[c].item)
+            for (let c = 0; c < itemsToSend[i].cards.length; c++) {
+                for (let a = 0; a < itemsToSend[i].cards[c].count; a++) {
+                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].iconUrl.substring(itemsToSend[i].cards[c].iconUrl.length - 5) + "." + itemsToSend[i].appId + "-" + itemsToSend[i].cards[c].item);
                     tradeParams.matches[partner][itemsToSend[i].appId].send.push(cardID);
                 }
             }
         }
-        for (let i=0; i<itemsToReceive.length; i++) {
+        for (let i = 0; i < itemsToReceive.length; i++) {
             if (tradeParams.matches[partner][itemsToReceive[i].appId] === undefined) {
                 throw new Error("Sent and received appIDs don't match!");
             }
-            for (let c=0; c<itemsToReceive[i].cards.length; c++) {
-                for (let a=0; a<itemsToReceive[i].cards[c].count; a++) {
-                    let cardID = tradeParams.cardNames.indexOf(itemsToReceive[i].cards[c].iconUrl.substring(itemsToReceive[i].cards[c].iconUrl.length - 5) + "." + itemsToReceive[i].appId + "-" + itemsToReceive[i].cards[c].item)
+            for (let c = 0; c < itemsToReceive[i].cards.length; c++) {
+                for (let a = 0; a < itemsToReceive[i].cards[c].count; a++) {
+                    let cardID = tradeParams.cardNames.indexOf(itemsToReceive[i].cards[c].iconUrl.substring(itemsToReceive[i].cards[c].iconUrl.length - 5) + "." + itemsToReceive[i].appId + "-" + itemsToReceive[i].cards[c].item);
                     tradeParams.matches[partner][itemsToReceive[i].appId].receive.push(cardID);
                 }
             }
@@ -895,7 +895,7 @@
         bots.Result[index].itemsToSend = itemsToSend;
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
-            storeMatches(bots.Result[index].SteamID,itemsToSend,itemsToReceive);
+            storeMatches(bots.Result[index].SteamID, itemsToSend, itemsToReceive);
             addMatchRow(index);
             callback();
         } else {
@@ -1062,13 +1062,13 @@
                     } else {
                         debugPrint("Error getting badge data, malformed HTML. Ignoring badge " + botBadges[index].appId);
                         setTimeout(
-                        (function (index, userindex) {
-                            return function () {
-                                GetCards(index, userindex);
-                            };
-                        })(index, userindex),
-                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
-                    );
+                            (function (index, userindex) {
+                                return function () {
+                                    GetCards(index, userindex);
+                                };
+                            })(index, userindex),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                        );
                     }
                     hideThrobber();
                     enableButton();
@@ -1306,7 +1306,7 @@
         let matches = document.getElementsByClassName("asf_stm_appid_" + appId);
         for (let i = 0; i < matches.length; i++) {
             if (event.target.checked) {
-                 matches[i].style.display = "inline-block";
+                matches[i].style.display = "inline-block";
                 if (!tradeParams.filter.includes(Number(appId))) {
                     tradeParams.filter.push(Number(appId));
                 }
@@ -1661,8 +1661,8 @@
                             }
                         }
                         if (elem.appid == inv[item].market_fee_app) {
-                            debugPrint ("name: "+ inv[item].name + ":"+elem.name );
-                            debugPrint ("icon: "+ inv[item].icon_url + ":"+elem.hash );
+                            debugPrint("name: " + inv[item].name + ":" + elem.name);
+                            debugPrint("icon: " + inv[item].icon_url + ":" + elem.hash);
                         }
                         return elem.appid == inv[item].market_fee_app && (elem.name === inv[item].name || inv[item].icon_url.endsWith(elem.hash));
                     });
@@ -1819,26 +1819,25 @@
                     filter.push(Number(vars.match));
                 }
 
-                let Cards = [[],[]];
+                let Cards = [[], []];
                 let matches = params.matches[vars.partner];
                 if (matches === undefined) {
                     throw new Error("no matches with this partner");
                 }
-                for (let i = 0; i<filter.length; i++) {
+                for (let i = 0; i < filter.length; i++) {
                     let appid = filter[i];
 
                     if (matches[appid] === undefined) {
                         //can happen, filter is just allowed appids, not necessaryly available on this bot.
                         debugPrint("no such appid in matches: " + appid);
                     } else {
-                        Cards[0] = Cards[0].concat(matches[appid].send.map(card => ParseCard(params.cardNames[card])));
-                        Cards[1] = Cards[1].concat(matches[appid].receive.map(card => ParseCard(params.cardNames[card])));
+                        Cards[0] = Cards[0].concat(matches[appid].send.map((card) => ParseCard(params.cardNames[card])));
+                        Cards[1] = Cards[1].concat(matches[appid].receive.map((card) => ParseCard(params.cardNames[card])));
                     }
                 }
 
                 if (Cards[0].length !== Cards[1].length) {
-                    unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") +
-                                                 " items than you give. Script aborting.");
+                    unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
                     throw new Error("Different items amount on both sides");
                 }
 
