@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.0
+// @version         3.4
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -486,6 +486,7 @@
         if (tradeParams.cardNames === undefined) {
             tradeParams.cardNames = Array.from(cardNames);
         }
+        console.warn(JSON.stringify(tradeParams.filter));
         localStorage.setItem("Ryzhehvost.ASF.STM.Params", JSON.stringify(tradeParams));
     }
 
@@ -612,7 +613,7 @@
 
         let matches = "";
         let any = "";
-        if (bots.Result[index].MatchEverything === 1) {
+        if (bots.Result[index].MatchEverything) {
             any = `&nbsp;<sup><span class="avatar_block_status_in-game" style="font-size: 8px; cursor:help" title="This bots trades for any cards within same set">&nbsp;ANY&nbsp;</span></sup>`;
         }
         for (let i = 0; i < itemsToSend.length; i++) {
@@ -635,6 +636,7 @@
                 spanTemplate.innerHTML = newFilter.trim();
                 filterWidget.appendChild(spanTemplate.content.firstChild);
                 tradeParams.filter.push(Number(appId));
+                SaveParams();
             } else {
                 if (checkBox.checked === false) {
                     display = "none";
@@ -804,7 +806,7 @@
                                     //that's fine for us
                                     debugPrint("it's a good trade for us");
                                     let theirInd = theirBadge.cards.findIndex((a) => a.item === myBadge.cards[k].item); //index of slot where they will receive card
-                                    if (bots.Result[index].MatchEverything === 0) {
+                                    if (!bots.Result[index].MatchEverything) {
                                         //make sure it's neutral+ for them
                                         if (theirBadge.cards[theirInd].count >= theirBadge.cards[j].count) {
                                             debugPrint("Not fair for them");
@@ -919,15 +921,15 @@
 
         if (
             userindex >= 0 &&
-            ((bots.Result[userindex].MatchEverything === 1 && !globalSettings.anyBots) ||
-                (bots.Result[userindex].MatchEverything === 0 && !globalSettings.fairBots) ||
+            ((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
+                (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
                 bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
                 (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
                 blacklist.includes(bots.Result[userindex].SteamID))
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
-            debugPrint(bots.Result[userindex].MatchEverything === 1 && !globalSettings.anyBots);
-            debugPrint(bots.Result[userindex].MatchEverything === 0 && !globalSettings.fairBots);
+            debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
+            debugPrint(!bots.Result[userindex].MatchEverything && !globalSettings.fairBots);
             debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
             debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
             debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
@@ -1305,12 +1307,12 @@
         for (let i = 0; i < matches.length; i++) {
             if (event.target.checked) {
                  matches[i].style.display = "inline-block";
-                if (!tradeParams.filter.includes(appId)) {
+                if (!tradeParams.filter.includes(Number(appId))) {
                     tradeParams.filter.push(Number(appId));
                 }
             } else {
                 matches[i].style.display = event.target.checked ? "inline-block" : "none";
-                let index = tradeParams.filter.indexOf(appId);
+                let index = tradeParams.filter.indexOf(Number(appId));
                 if (index !== -1) {
                     tradeParams.filter.splice(index, 1);
                 }
@@ -1826,7 +1828,7 @@
                     let appid = filter[i];
 
                     if (matches[appid] === undefined) {
-                        //can happen, filter is just allowed appids, not necessary to be exist on this bot.
+                        //can happen, filter is just allowed appids, not necessaryly available on this bot.
                         debugPrint("no such appid in matches: " + appid);
                     } else {
                         Cards[0] = Cards[0].concat(matches[appid].send.map(card => ParseCard(params.cardNames[card])));
