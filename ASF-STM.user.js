@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         3.4
+// @version         3.5
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -47,6 +47,11 @@
         autoSend: false,
         doAfterTrade: "NOTHING",
         order: "AS_IS",
+    };
+    let cardNames = new Set();
+    let tradeParams = {
+        matches: {},
+        filter: [],
     };
 
     //styles
@@ -158,7 +163,7 @@
     function rgbaToHex(rgba) {
         let re = /rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
         let result = re.exec(rgba);
-        if (result === null || result.length != 5) {
+        if (result === null || result.length !== 5) {
             debugPrint("failed to parse color!");
             return ["#171a21", 0.8];
         }
@@ -332,10 +337,10 @@
                   <label for="after-trade">After
               trade...</label>
                   <select style="background-color: #171d25; color: white;" name="after-trade" id="doAfterTrade">
-                  <option value="NOTHING" ${globalSettings.doAfterTrade == "NOTHING" ? 'selected="selected"' : ""}>Do
+                  <option value="NOTHING" ${globalSettings.doAfterTrade === "NOTHING" ? 'selected="selected"' : ""}>Do
               Nothing</option>
-                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade == "CLOSE_WINDOW" ? 'selected="selected"' : ""}>Close window</option>
-                  <option value="CLICK_OK" ${globalSettings.doAfterTrade == "CLICK_OK" ? 'selected="selected"' : ""}>Click OK</option>
+                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade === "CLOSE_WINDOW" ? 'selected="selected"' : ""}>Close window</option>
+                  <option value="CLICK_OK" ${globalSettings.doAfterTrade === "CLICK_OK" ? 'selected="selected"' : ""}>Click OK</option>
                   </select>
                   <a class="tooltip hover_tooltip" data-tooltip-html="
                   <p>Determines what happens when you complete a trade offer.</p>
@@ -356,9 +361,9 @@
               order</label>
                   <select style="background-color: #171d25; color: white;" class="form-control" name="cards-order"
                id="order">
-                  <option value="SORT" ${globalSettings.order == "SORT" ? 'selected="selected"' : ""}>Sorted</option>
-                  <option value="RANDOM" ${globalSettings.order == "RANDOM" ? 'selected="selected"' : ""}>Random</option>
-                  <option value="AS_IS" ${globalSettings.order == "AS_IS" ? 'selected="selected"' : ""}>As is</option>
+                  <option value="SORT" ${globalSettings.order === "SORT" ? 'selected="selected"' : ""}>Sorted</option>
+                  <option value="RANDOM" ${globalSettings.order === "RANDOM" ? 'selected="selected"' : ""}>Random</option>
+                  <option value="AS_IS" ${globalSettings.order === "AS_IS" ? 'selected="selected"' : ""}>As is</option>
                   </select>
                    <a class="tooltip hover_tooltip" data-tooltip-html="
                    <p>Determines which card is added to trade.</p>
@@ -477,6 +482,18 @@
         });
     }
 
+    function SaveParams() {
+        if (tradeParams.cardNames === undefined) {
+            tradeParams.cardNames = Array.from(cardNames);
+        }
+        console.warn(JSON.stringify(tradeParams.filter));
+        localStorage.setItem("Ryzhehvost.ASF.STM.Params", JSON.stringify(tradeParams));
+    }
+
+    function LoadParams() {
+        return JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Params"));
+    }
+
     function enableButton() {
         let buttonDiv = document.getElementById("asf_stm_button_div");
         buttonDiv.setAttribute("class", "profile_small_header_additional");
@@ -516,7 +533,7 @@
         }
         bar.style.width = `${progress}%`;
         bar.style.transitionDuration = "0.5s";
-        if (progress == 100) {
+        if (progress === 100) {
             bar.style.transitionDuration = "0s";
         }
     }
@@ -534,16 +551,11 @@
     }
 
     function populateCards(item) {
-        let nameList = "";
         let htmlCards = "";
         for (let j = 0; j < item.cards.length; j++) {
             let itemIcon = item.cards[j].iconUrl;
             let itemName = item.cards[j].item;
             for (let k = 0; k < item.cards[j].count; k++) {
-                if (nameList != "") {
-                    nameList += ";";
-                }
-                nameList += encodeURIComponent(item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) + "." + item.appId + "-" + item.cards[j].item);
                 let cardTemplate = `
                           <div class="showcase_slot">
                             <img class="image-container" src="${itemIcon}/98x115">
@@ -553,48 +565,7 @@
                 htmlCards += cardTemplate;
             }
         }
-        return {
-            htmlCards: htmlCards,
-            nameList: nameList,
-        };
-    }
-
-    function getNames(item) {
-        let names = "";
-        for (let j = 0; j < item.cards.length; j++) {
-            for (let k = 0; k < item.cards[j].count; k++) {
-                if (names != "") {
-                    names += ";";
-                }
-                names += encodeURIComponent(item.cards[j].iconUrl.substring(item.cards[j].iconUrl.length - 5) + "." + item.appId + "-" + item.cards[j].item);
-            }
-        }
-        return names;
-    }
-
-    function updateTrade(row) {
-        let index = row.id.split("_")[1];
-        let tradeLink = row.getElementsByClassName("full_trade_url")[0];
-        let splitUrl = tradeLink.href.split("&");
-        let them = "";
-        let you = "";
-        for (let i = 0; i < bots.Result[index].itemsToSend.length; i++) {
-            let appId = bots.Result[index].itemsToSend[i].appId;
-            let checkBox = document.getElementById("astm_" + appId);
-            if (checkBox.checked) {
-                if (you != "") {
-                    you += ";";
-                }
-                you = you + getNames(bots.Result[index].itemsToSend[i]);
-                if (them != "") {
-                    them += ";";
-                }
-                them = them + getNames(bots.Result[index].itemsToReceive[i]);
-            }
-        }
-        splitUrl[3] = "them=" + them;
-        splitUrl[4] = "you=" + you;
-        tradeLink.href = splitUrl.join("&");
+        return htmlCards;
     }
 
     function checkRow(row) {
@@ -602,14 +573,13 @@
         let matches = row.getElementsByClassName("badge_row");
         let visible = false;
         for (let i = 0; i < matches.length; i++) {
-            if (matches[i].parentElement.style.display != "none") {
+            if (matches[i].parentElement.style.display !== "none") {
                 visible = true;
                 break;
             }
         }
         if (visible) {
             row.style.display = "block";
-            updateTrade(row);
         } else {
             row.style.display = "none";
         }
@@ -639,12 +609,11 @@
         }
 
         let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
+        debugPrint(tradeUrl);
 
-        let globalYou = "";
-        let globalThem = "";
         let matches = "";
         let any = "";
-        if (bots.Result[index].MatchEverything == 1) {
+        if (bots.Result[index].MatchEverything) {
             any = `&nbsp;<sup><span class="avatar_block_status_in-game" style="font-size: 8px; cursor:help" title="This bots trades for any cards within same set">&nbsp;ANY&nbsp;</span></sup>`;
         }
         for (let i = 0; i < itemsToSend.length; i++) {
@@ -656,18 +625,20 @@
             //remove placeholder
             let filterWidget = document.getElementById("asf_stm_filters_body");
             let placeholder = document.getElementById("asf_stm_placeholder");
-            if (placeholder != null) {
-                placeholder.remove();
+            if (placeholder !== null) {
+                placeholder.parentNode.removeChild(placeholder);
             }
             //add filter
             let checkBox = document.getElementById("astm_" + appId);
-            if (checkBox == null) {
+            if (checkBox === null) {
                 let newFilter = `<span style="margin-right: 15px; white-space: nowrap; display: inline-block;"><input type="checkbox" id="astm_${appId}" checked="" /><label for="astm_${appId}">${gameName}</label></span>`;
                 let spanTemplate = document.createElement("template");
                 spanTemplate.innerHTML = newFilter.trim();
                 filterWidget.appendChild(spanTemplate.content.firstChild);
+                tradeParams.filter.push(Number(appId));
+                SaveParams();
             } else {
-                if (checkBox.checked == false) {
+                if (checkBox.checked === false) {
                     display = "none";
                 }
             }
@@ -675,18 +646,18 @@
             let sendResult = populateCards(itemsToSend[i]);
             let receiveResult = populateCards(itemToReceive);
 
-            let tradeUrlApp = tradeUrl + "&them=" + receiveResult.nameList + "&you=" + sendResult.nameList;
+            let tradeUrlApp = tradeUrl + "&match=" + appId;
 
             let matchTemplate = `
                   <div class="asf_stm_appid_${appId}" style="display:${display}">
                     <div class="badge_row is_link goo_untradable_note showcase_slot">
                       <div class="notLoggedInText">
-                        <img style="background-color: var(--gpStoreDarkerGrey);" height=69 alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg"
-                        onerror="this.onerror=null;this.src='https://store.akamai.steamstatic.com/public/images/gift/steam_logo_digitalgiftcard.png'">
-                        <div>
-                          <div title="View badge progress for this game">
-                            <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">${gameName}</a>
-                          </div>
+                        <div title="View badge progress for this game">
+                          <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">
+                            <img style="background-color: var(--gpStoreDarkerGrey);" height=69 alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg"
+                            onerror="this.onerror=null;this.src='https://store.akamai.steamstatic.com/public/images/gift/steam_logo_digitalgiftcard.png'">
+                            <div>${gameName}</div>
+                          </a>
                         </div>
                         <div class="btn_darkblue_white_innerfade btn_medium">
                           <span>
@@ -697,7 +668,7 @@
                       <div class="showcase_slot">
                           <div class="showcase_slot profile_header">
                               <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_in-game badge_info_title badge_row_overlay" style="height: 15px;">You</div>
-                              ${sendResult.htmlCards}
+                              ${sendResult}
                           </div>
                           <span class="showcase_slot badge_info_title booster_creator_actions">
                               <h1>&#10145;</h1>
@@ -707,24 +678,16 @@
                           <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_online badge_info_title badge_row_overlay ellipsis" style="height: 15px;">
                             ${bots.Result[index].Nickname}
                           </div>
-                        ${receiveResult.htmlCards}
+                        ${receiveResult}
                       </div>
                     </div>
                   </div>
             `;
-            if (checkBox == null || checkBox.checked) {
+            if (checkBox === null || checkBox.checked) {
                 matches += matchTemplate;
-                if (globalYou != "") {
-                    globalYou += ";";
-                }
-                globalYou += sendResult.nameList;
-                if (globalThem != "") {
-                    globalThem += ";";
-                }
-                globalThem += receiveResult.nameList;
             }
         }
-        let tradeUrlFull = tradeUrl + "&them=" + globalThem + "&you=" + globalYou;
+        let tradeUrlFull = tradeUrl + "&match=all";
         let rowTemplate = `
             <div id="asfstmbot_${index}" class="badge_row">
               <div class="badge_row_inner">
@@ -767,8 +730,8 @@
     function calcState(badge) {
         //state 0 - less than max sets; state 1 - we have max sets, even out the rest, state 2 - all even
         debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet + " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);
-        if (badge.cards[badge.maxCards - 1].count == badge.maxSets) {
-            if (badge.cards[0].count == badge.lastSet) {
+        if (badge.cards[badge.maxCards - 1].count === badge.maxSets) {
+            if (badge.cards[0].count === badge.lastSet) {
                 return 2; //nothing to do
             } else {
                 return 1; //max sets are here, but we can distribute cards further
@@ -776,6 +739,37 @@
         } else {
             return 0; //less than max sets
         }
+    }
+
+    function storeMatches(steamID, itemsToSend, itemsToReceive) {
+        let partner = getPartner(steamID);
+        tradeParams.matches[partner] = {};
+        for (let i = 0; i < itemsToSend.length; i++) {
+            if (tradeParams.matches[partner][itemsToSend[i].appId] === undefined) {
+                tradeParams.matches[partner][itemsToSend[i].appId] = { send: [], receive: [] };
+            }
+            for (let c = 0; c < itemsToSend[i].cards.length; c++) {
+                for (let a = 0; a < itemsToSend[i].cards[c].count; a++) {
+                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].iconUrl.substring(itemsToSend[i].cards[c].iconUrl.length - 5) + "." + itemsToSend[i].appId + "-" + itemsToSend[i].cards[c].item);
+                    tradeParams.matches[partner][itemsToSend[i].appId].send.push(cardID);
+                }
+            }
+        }
+        for (let i = 0; i < itemsToReceive.length; i++) {
+            if (tradeParams.matches[partner][itemsToReceive[i].appId] === undefined) {
+                throw new Error("Sent and received appIDs don't match!");
+            }
+            for (let c = 0; c < itemsToReceive[i].cards.length; c++) {
+                for (let a = 0; a < itemsToReceive[i].cards[c].count; a++) {
+                    let cardID = tradeParams.cardNames.indexOf(itemsToReceive[i].cards[c].iconUrl.substring(itemsToReceive[i].cards[c].iconUrl.length - 5) + "." + itemsToReceive[i].appId + "-" + itemsToReceive[i].cards[c].item);
+                    tradeParams.matches[partner][itemsToReceive[i].appId].receive.push(cardID);
+                }
+            }
+            if (tradeParams.matches[partner][itemsToReceive[i].appId].send.length !== tradeParams.matches[partner][itemsToReceive[i].appId].receive.length) {
+                throw new Error("Sent and received card count don't match for " + tradeParams.matches[partner][itemsToReceive[i].appId] + " !");
+            }
+        }
+        SaveParams();
     }
 
     function compareCards(index, callback) {
@@ -799,8 +793,8 @@
                     //index of card they give
                     if (theirBadge.cards[j].count > 0) {
                         //try to match
-                        let myInd = myBadge.cards.findIndex((a) => a.item == theirBadge.cards[j].item); //index of slot where we receive card
-                        if ((myState == 0 && myBadge.cards[myInd].count < myBadge.maxSets) || (myState == 1 && myBadge.cards[myInd].count < myBadge.lastSet)) {
+                        let myInd = myBadge.cards.findIndex((a) => a.item === theirBadge.cards[j].item); //index of slot where we receive card
+                        if ((myState === 0 && myBadge.cards[myInd].count < myBadge.maxSets) || (myState === 1 && myBadge.cards[myInd].count < myBadge.lastSet)) {
                             //we need this ^Kfor the Emperor
                             debugPrint("we need this: " + theirBadge.cards[j].item + " (" + theirBadge.cards[j].count + ")");
                             //find a card to match.
@@ -808,11 +802,11 @@
                                 //index of card we give
                                 debugPrint("i=" + i + " j=" + j + " k=" + k + " myState=" + myState);
                                 debugPrint("we have this: " + myBadge.cards[k].item + " (" + myBadge.cards[k].count + ")");
-                                if ((myState == 0 && myBadge.cards[k].count > myBadge.maxSets) || (myState == 1 && myBadge.cards[k].count > myBadge.lastSet)) {
+                                if ((myState === 0 && myBadge.cards[k].count > myBadge.maxSets) || (myState === 1 && myBadge.cards[k].count > myBadge.lastSet)) {
                                     //that's fine for us
                                     debugPrint("it's a good trade for us");
-                                    let theirInd = theirBadge.cards.findIndex((a) => a.item == myBadge.cards[k].item); //index of slot where they will receive card
-                                    if (bots.Result[index].MatchEverything == 0) {
+                                    let theirInd = theirBadge.cards.findIndex((a) => a.item === myBadge.cards[k].item); //index of slot where they will receive card
+                                    if (!bots.Result[index].MatchEverything) {
                                         //make sure it's neutral+ for them
                                         if (theirBadge.cards[theirInd].count >= theirBadge.cards[j].count) {
                                             debugPrint("Not fair for them");
@@ -833,7 +827,7 @@
                                     };
                                     //fill items to send
                                     let sendmatch = itemsToSend.find((item) => item.appId == myBadge.appId);
-                                    if (sendmatch == undefined) {
+                                    if (sendmatch === undefined) {
                                         let newMatch = {
                                             appId: myBadge.appId,
                                             title: myBadge.title,
@@ -841,8 +835,8 @@
                                         };
                                         itemsToSend.push(newMatch);
                                     } else {
-                                        let existingCard = sendmatch.cards.find((a) => a.item == itemToSend.item);
-                                        if (existingCard == undefined) {
+                                        let existingCard = sendmatch.cards.find((a) => a.item === itemToSend.item);
+                                        if (existingCard === undefined) {
                                             sendmatch.cards.push(itemToSend);
                                         } else {
                                             existingCard.count += 1;
@@ -855,7 +849,7 @@
 
                                     //fill items to receive
                                     let receiveMatch = itemsToReceive.find((item) => item.appId == myBadge.appId);
-                                    if (receiveMatch == undefined) {
+                                    if (receiveMatch === undefined) {
                                         let newMatch = {
                                             appId: myBadge.appId,
                                             title: myBadge.title,
@@ -863,8 +857,8 @@
                                         };
                                         itemsToReceive.push(newMatch);
                                     } else {
-                                        let existingCard = receiveMatch.cards.find((a) => a.item == itemToReceive.item);
-                                        if (existingCard == undefined) {
+                                        let existingCard = receiveMatch.cards.find((a) => a.item === itemToReceive.item);
+                                        if (existingCard === undefined) {
                                             receiveMatch.cards.push(itemToReceive);
                                         } else {
                                             existingCard.count += 1;
@@ -901,6 +895,7 @@
         bots.Result[index].itemsToSend = itemsToSend;
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
+            storeMatches(bots.Result[index].SteamID, itemsToSend, itemsToReceive);
             addMatchRow(index);
             callback();
         } else {
@@ -920,21 +915,21 @@
             updateProgress(1, 1); // limit reached, fill the bar
             enableButton();
             let stopButton = document.getElementById("asf_stm_stop");
-            stopButton.remove();
+            stopButton.parentNode.removeChild(stopButton);
             return;
         }
 
         if (
             userindex >= 0 &&
-            ((bots.Result[userindex].MatchEverything == 1 && !globalSettings.anyBots) ||
-                (bots.Result[userindex].MatchEverything == 0 && !globalSettings.fairBots) ||
+            ((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
+                (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
                 bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
                 (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
                 blacklist.includes(bots.Result[userindex].SteamID))
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
-            debugPrint(bots.Result[userindex].MatchEverything == 1 && !globalSettings.anyBots);
-            debugPrint(bots.Result[userindex].MatchEverything == 0 && !globalSettings.fairBots);
+            debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
+            debugPrint(!bots.Result[userindex].MatchEverything && !globalSettings.fairBots);
             debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
             debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
             debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
@@ -942,7 +937,7 @@
             return;
         }
 
-        if (index == 0) {
+        if (index === 0) {
             botBadges.length = 0;
             botBadges = deepClone(myBadges);
             for (let i = 0; i < botBadges.length; i++) {
@@ -951,7 +946,7 @@
         }
         if (index < botBadges.length) {
             let profileLink;
-            if (userindex == -1) {
+            if (userindex === -1) {
                 profileLink = myProfileLink;
                 updateMessage("Getting our data for badge " + (index + 1) + " of " + botBadges.length);
                 updateProgress(index, botBadges.length);
@@ -972,7 +967,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
                 let status = xhr.status;
@@ -996,7 +991,7 @@
                         botBadges[index].maxCards = badgeCards.length;
                         for (let i = 0; i < badgeCards.length; i++) {
                             let quantityElement = badgeCards[i].querySelector(".badge_card_set_text_qty");
-                            let quantity = quantityElement == null ? "(0)" : quantityElement.innerText.trim();
+                            let quantity = quantityElement === null ? "(0)" : quantityElement.innerText.trim();
                             quantity = quantity.slice(1, -1);
                             let name = "";
                             badgeCards[i].querySelector(".badge_card_set_title").childNodes.forEach(function (element) {
@@ -1013,16 +1008,20 @@
                             };
                             debugPrint(JSON.stringify(newcard));
                             botBadges[index].cards.push(newcard);
+                            if (userindex === -1) {
+                                //maybe save whole hash with .split("/")[5] ?
+                                cardNames.add(icon.substring(icon.length - 5) + "." + botBadges[index].appId + "-" + name);
+                            }
                         }
 
                         //Check for same hash but different name, ask user to report
-                        if (userindex == -1) {
+                        if (userindex === -1) {
                             for (let j = 0; j < botBadges[index].cards.length; j++) {
                                 for (let i = 0; i < botBadges[index].cards.length; i++) {
                                     if (
-                                        i != j &&
-                                        botBadges[index].cards[i].name != botBadges[index].cards[j].name &&
-                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) == botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)
+                                        i !== j &&
+                                        botBadges[index].cards[i].name !== botBadges[index].cards[j].name &&
+                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) === botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)
                                     ) {
                                         unsafeWindow.ShowAlertDialog("WARNING", "Different cards have same signature, please report this: " + botBadges[index].appId);
                                     }
@@ -1058,15 +1057,23 @@
                         globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                 } else {
-                    if (status != 200) {
+                    if (status !== 200) {
                         updateMessage("Error getting badge data, ERROR " + status);
                     } else {
-                        updateMessage("Error getting badge data, malformed HTML");
+                        debugPrint("Error getting badge data, malformed HTML. Ignoring badge " + botBadges[index].appId);
+                        setTimeout(
+                            (function (index, userindex) {
+                                return function () {
+                                    GetCards(index, userindex);
+                                };
+                            })(index, userindex),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                        );
                     }
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
             };
@@ -1077,7 +1084,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
                 errors++;
@@ -1097,7 +1104,7 @@
                     hideThrobber();
                     enableButton();
                     let stopButton = document.getElementById("asf_stm_stop");
-                    stopButton.remove();
+                    stopButton.parentNode.removeChild(stopButton);
                     return;
                 }
             };
@@ -1129,14 +1136,15 @@
         debugTimeEnd("Filter and sort");
 
         if (userindex < 0) {
-            if (botBadges.length == 0) {
+            if (botBadges.length === 0) {
                 hideThrobber();
                 updateMessage("No cards to match");
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             } else {
+                SaveParams();
                 myBadges = deepClone(botBadges);
                 GetCards(0, 0);
                 return;
@@ -1167,7 +1175,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
             let status = xhr.status;
@@ -1237,7 +1245,7 @@
                         updateMessage("No cards to match");
                         enableButton();
                         let stopButton = document.getElementById("asf_stm_stop");
-                        stopButton.remove();
+                        stopButton.parentNode.removeChild(stopButton);
                         return;
                     } else {
                         setTimeout(
@@ -1249,7 +1257,7 @@
                     }
                 }
             } else {
-                if (status != 200) {
+                if (status !== 200) {
                     updateMessage("Error getting badge page, ERROR " + status);
                 } else {
                     updateMessage("Error getting badge page, malformed HTML");
@@ -1257,7 +1265,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
         };
@@ -1267,7 +1275,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
             errors++;
@@ -1286,7 +1294,7 @@
                 hideThrobber();
                 enableButton();
                 let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.remove();
+                stopButton.parentNode.removeChild(stopButton);
                 return;
             }
         };
@@ -1297,9 +1305,21 @@
         let appId = event.target.id.split("_")[1];
         let matches = document.getElementsByClassName("asf_stm_appid_" + appId);
         for (let i = 0; i < matches.length; i++) {
-            matches[i].style.display = event.target.checked ? "inline-block" : "none";
+            if (event.target.checked) {
+                matches[i].style.display = "inline-block";
+                if (!tradeParams.filter.includes(Number(appId))) {
+                    tradeParams.filter.push(Number(appId));
+                }
+            } else {
+                matches[i].style.display = event.target.checked ? "inline-block" : "none";
+                let index = tradeParams.filter.indexOf(Number(appId));
+                if (index !== -1) {
+                    tradeParams.filter.splice(index, 1);
+                }
+            }
             checkRow(matches[i].parentElement.parentElement);
         }
+        SaveParams();
     }
 
     function filterSwitchesHandler(event) {
@@ -1326,7 +1346,7 @@
 
     function filtersButtonEvent() {
         let filterWidget = document.getElementById("asf_stm_filters");
-        if (filterWidget.style.marginRight == "-50%") {
+        if (filterWidget.style.marginRight === "-50%") {
             filterWidget.style.marginRight = "unset";
         } else {
             filterWidget.style.marginRight = "-50%";
@@ -1343,7 +1363,7 @@
     }
 
     function buttonPressedEvent() {
-        if (bots === null || bots.Result === undefined || bots.Result.length == 0 || bots.Success != true || bots.cacheTime + botCacheTime < Date.now()) {
+        if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success !== true || bots.cacheTime + botCacheTime < Date.now()) {
             debugPrint("Bot cache invalidated");
             fetchBots();
             return;
@@ -1465,7 +1485,7 @@
             method: "GET",
             url: requestUrl,
             onload: function (response) {
-                if (response.status != 200) {
+                if (response.status !== 200) {
                     disableButton();
                     document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
                     debugPrint("can't fetch list of bots, ERROR=" + response.status);
@@ -1523,7 +1543,7 @@
     //Main
     LoadConfig();
     localStorage.removeItem("Ryzhehvost.ASF.STM"); //we used to store classid database here before, clean this up.
-    if (document.getElementsByClassName("badge_details_set_favorite").length != 0) {
+    if (document.getElementsByClassName("badge_details_set_favorite").length !== 0) {
         let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
         let result = profileRegex.exec(document.location);
         if (result) {
@@ -1573,7 +1593,7 @@
         enableButton();
 
         // add our styles to the document's style sheet
-        if (typeof GM_addStyle != "undefined") {
+        if (typeof GM_addStyle !== "undefined") {
             GM_addStyle(css);
         } else {
             const node = document.createElement("style");
@@ -1587,7 +1607,7 @@
             }
         }
     } else {
-        //All code below is a modified version of SteamTrade Matcher Userscript by Tithen-Firion
+        //Code below is a heavily modified version of SteamTrade Matcher Userscript by Tithen-Firion
         //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
 
         // MIT License
@@ -1640,6 +1660,10 @@
                                 }
                             }
                         }
+                        if (elem.appid == inv[item].market_fee_app) {
+                            debugPrint("name: " + inv[item].name + ":" + elem.name);
+                            debugPrint("icon: " + inv[item].icon_url + ":" + elem.hash);
+                        }
                         return elem.appid == inv[item].market_fee_app && (elem.name === inv[item].name || inv[item].icon_url.endsWith(elem.hash));
                     });
                     if (index > -1) {
@@ -1673,7 +1697,7 @@
                 });
             });
 
-            if (failLater || document.querySelectorAll("#your_slots .has_item").length != document.querySelectorAll("#their_slots .has_item").length) {
+            if (failLater || document.querySelectorAll("#your_slots .has_item").length !== document.querySelectorAll("#their_slots .has_item").length) {
                 unsafeWindow.ShowAlertDialog("Items missing", "Some items are missing and were not added to trade offer. Script aborting.");
                 throw "Cards missing";
             }
@@ -1706,6 +1730,8 @@
                 unsafeWindow.ToggleReady(true);
                 unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
             }
+
+            debugPrint("everything done");
         }
 
         function checkContexts(g_s, g_v) {
@@ -1745,11 +1771,10 @@
 
         function getUrlVars() {
             "use strict";
-            let vars = [];
+            let vars = {};
             let hashes = window.location.href.slice(window.location.href.indexOf("?") + 1).split("&");
             hashes.forEach(function (hash) {
                 hash = hash.split("=");
-                vars.push(hash[0]);
                 vars[hash[0]] = hash[1];
             });
             return vars;
@@ -1761,7 +1786,7 @@
             let decodedVar = decodeURIComponent(card);
             const re = new RegExp("(.{5}).([0-9]+)-(.*)");
             let result = decodedVar.match(re);
-            if (result && result.length == 4) {
+            if (result && result.length === 4) {
                 return {
                     id: card,
                     appid: result[2],
@@ -1775,30 +1800,62 @@
         }
 
         try {
-            LoadConfig();
+            if (window.location.href.includes("source=asfstm")) {
+                LoadConfig();
+                let params = LoadParams();
 
-            // get cards data from URL
+                let vars = getUrlVars();
 
-            let vars = getUrlVars();
+                if (vars.match === undefined) {
+                    throw new Error("missing url parameter");
+                }
+                let filter = [];
+                if (vars.match === "all") {
+                    filter = params.filter;
+                } else {
+                    if (Number(vars.match) === NaN) {
+                        throw new Error("invalid url parameter");
+                    }
+                    filter.push(Number(vars.match));
+                }
 
-            let Cards = [vars.you ? vars.you.split(";").map((elem) => ParseCard(elem)) : [], vars.them ? vars.them.split(";").map((elem) => ParseCard(elem)) : []];
+                let Cards = [[], []];
+                let matches = params.matches[vars.partner];
+                if (matches === undefined) {
+                    throw new Error("no matches with this partner");
+                }
+                for (let i = 0; i < filter.length; i++) {
+                    let appid = filter[i];
 
-            if (Cards[0].length !== Cards[1].length) {
-                unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
-                throw "Different items amount on both sides";
+                    if (matches[appid] === undefined) {
+                        //can happen, filter is just allowed appids, not necessaryly available on this bot.
+                        debugPrint("no such appid in matches: " + appid);
+                    } else {
+                        Cards[0] = Cards[0].concat(matches[appid].send.map((card) => ParseCard(params.cardNames[card])));
+                        Cards[1] = Cards[1].concat(matches[appid].receive.map((card) => ParseCard(params.cardNames[card])));
+                    }
+                }
+
+                if (Cards[0].length !== Cards[1].length) {
+                    unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
+                    throw new Error("Different items amount on both sides");
+                }
+
+                if (Cards[0].length === 0) {
+                    throw new Error("nothing to add, exiting");
+                }
+                // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+                let oldCookie = document.cookie.split("strTradeLastInventoryContext=")[1];
+                if (oldCookie) {
+                    oldCookie = oldCookie.split(";")[0];
+                }
+                document.cookie = "strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/";
+
+                let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+                let global_vars = { Users: Users, oldCookie: oldCookie, Cards: Cards };
+
+                window.setTimeout(checkContexts, 500, globalSettings, global_vars);
             }
-
-            // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-            let oldCookie = document.cookie.split("strTradeLastInventoryContext=")[1];
-            if (oldCookie) {
-                oldCookie = oldCookie.split(";")[0];
-            }
-            document.cookie = "strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/";
-
-            let Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-            let global_vars = { Users: Users, oldCookie: oldCookie, Cards: Cards };
-
-            window.setTimeout(checkContexts, 500, globalSettings, global_vars);
         } catch (e) {
             debugPrint(e);
         }
