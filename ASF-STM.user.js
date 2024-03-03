@@ -15,6 +15,8 @@
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
 // @grant           GM_xmlhttpRequest
+// @downloadURL https://update.greasyfork.org/scripts/404754/ASF%20STM.user.js
+// @updateURL https://update.greasyfork.org/scripts/404754/ASF%20STM.meta.js
 // ==/UserScript==
 
 (function () {
@@ -750,7 +752,7 @@
             }
             for (let c = 0; c < itemsToSend[i].cards.length; c++) {
                 for (let a = 0; a < itemsToSend[i].cards[c].count; a++) {
-                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].iconUrl.substring(itemsToSend[i].cards[c].iconUrl.length - 5) + "." + itemsToSend[i].appId + "-" + itemsToSend[i].cards[c].item);
+                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].hash);
                     tradeParams.matches[partner][itemsToSend[i].appId].send.push(cardID);
                 }
             }
@@ -904,6 +906,191 @@
         }
     }
 
+    function GetOwnCards(index) {
+        debugPrint("GetOwnCards " + index);
+
+        if (index === 0) {
+            for (let i = 0; i < myBadges.length; i++) {
+                myBadges[i].cards.length = 0;
+            }
+        }
+        if (index < myBadges.length) {
+            let profileLink;
+            profileLink = myProfileLink;
+            updateMessage("Getting our data for badge " + (index + 1) + " of " + myBadges.length);
+            updateProgress(index, myBadges.length);
+
+            let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + myBadges[index].appId;
+            let xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.responseType = "json";
+            // eslint-disable-next-line
+            xhr.onload = function () {
+                if (stop) {
+                    updateMessage("Interrupted by user");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+                let status = xhr.status;
+                if (status === 200) {
+                    try {
+                        debugPrint("processing badge " + myBadges[index].appId);
+                        if (xhr.json.eresult == 1) {
+                            if (xhr.json.badgedata.rgCards.length >= 5) {
+                                errors = 0;
+                                myBadges[index].maxCards = xhr.json.badgedata.rgCards.length;
+                                for (let i = 0; i < myBadges[index].maxCards; i++) {
+                                    let newcard = {
+                                        item: xhr.json.badgedata.rgCards[i].name,
+                                        hash: xhr.json.badgedata.rgCards[i].markethash,
+                                        count: xhr.json.badgedata.rgCards[i].owned,
+                                        iconUrl: xhr.json.badgedata.rgCards[0].imgurl,
+                                        number: i
+                                    };
+                                    debugPrint(JSON.stringify(newcard));
+                                    myBadges[index].cards.push(newcard);
+                                    cardNames.add(xhr.json.badgedata.rgCards[i].markethash);
+                                }
+
+                                index++;
+                                setTimeout(
+                                    (function (index) {
+                                        return function () {
+                                            GetOwnCards(index);
+                                        };
+                                    })(index),
+                                    globalSettings.weblimiter,
+                                );
+                                return;
+                            } else {
+                                debugPrint("less than 5 cards in a badge - something is wrong")
+                                debugPrint(JSON.stringify(xhr.json));
+                                errors++;
+                            }
+                        } else {
+                            debugPrint("eresult = "+xhr.json.eresult);
+                            updateMessage("Error getting own badge data");
+                            hideThrobber();
+                            enableButton();
+                            let stopButton = document.getElementById("asf_stm_stop");
+                            stopButton.parentNode.removeChild(stopButton);
+                            return;
+                        }
+                    } catch (error) {
+                        debugPrint(error);
+                        debugPrint(JSON.stringify(xhr.json));
+                        errors++;
+                    }
+                } else {
+                    errors++;
+                }
+                if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
+                    setTimeout(
+                        (function (index) {
+                            return function () {
+                                GetOwnCards(index);
+                            };
+                        })(index),
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                    );
+                } else {
+                    if (status !== 200) {
+                        updateMessage("Error getting badge data, ERROR " + status);
+                    } else {
+                        debugPrint("Error getting own badge data, wrong badge " + myBadges[index].appId);
+                        setTimeout(
+                            (function (index) {
+                                return function () {
+                                    GetOwnCards(index);
+                                };
+                            })(index),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                        );
+                    }
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+            };
+            // eslint-disable-next-line
+            xhr.onerror = function () {
+                if (stop) {
+                    updateMessage("Interrupted by user");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+                errors++;
+                if (errors <= globalSettings.maxErrors) {
+                    setTimeout(
+                        (function (index) {
+                            return function () {
+                                GetOwnCards(index);
+                            };
+                        })(index),
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                    );
+                    return;
+                } else {
+                    debugPrint("error");
+                    updateMessage("Error getting badge data");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+            };
+            xhr.send();
+            return; //do this synchronously to avoid rate limit
+        }
+        debugPrint("populated");
+
+        debugTime("Filter and sort");
+        for (let i = myBadges.length - 1; i >= 0; i--) {
+            debugPrint("badge " + i + JSON.stringify(myBadges[i]));
+
+            myBadges[i].cards.sort((a, b) => b.count - a.count);
+            if (myBadges[i].cards[0].count - myBadges[i].cards[myBadges[i].cards.length - 1].count < 2) {
+                //nothing to match, remove from list.
+                myBadges.splice(i, 1);
+                continue;
+            }
+
+            let totalCards = 0;
+            for (let j = 0; j < myBadges[i].maxCards; j++) {
+                totalCards += myBadges[i].cards[j].count;
+            }
+            myBadges[i].maxSets = Math.floor(totalCards / myBadges[i].maxCards);
+            myBadges[i].lastSet = Math.ceil(totalCards / myBadges[i].maxCards);
+            debugPrint("totalCards=" + totalCards + " maxSets=" + myBadges[i].maxSets + " lastSet=" + myBadges[i].lastSet);
+        }
+        debugTimeEnd("Filter and sort");
+
+        if (myBadges.length === 0) {
+            hideThrobber();
+            updateMessage("No cards to match");
+            enableButton();
+            let stopButton = document.getElementById("asf_stm_stop");
+                stopButton.parentNode.removeChild(stopButton);
+            return;
+        } else {
+            SaveParams();
+            GetCards(0, 0);
+            return;
+        }
+    }
+
+    function SortOwnCards() {
+    }
+
     function GetCards(index, userindex) {
         debugPrint("GetCards " + index + " : " + userindex);
 
@@ -919,13 +1106,11 @@
             return;
         }
 
-        if (
-            userindex >= 0 &&
-            ((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
-                (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
-                bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
-                (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
-                blacklist.includes(bots.Result[userindex].SteamID))
+        if (((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
+            (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
+             bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
+             (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
+             blacklist.includes(bots.Result[userindex].SteamID))
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
             debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
@@ -945,16 +1130,9 @@
             }
         }
         if (index < botBadges.length) {
-            let profileLink;
-            if (userindex === -1) {
-                profileLink = myProfileLink;
-                updateMessage("Getting our data for badge " + (index + 1) + " of " + botBadges.length);
-                updateProgress(index, botBadges.length);
-            } else {
-                profileLink = "profiles/" + bots.Result[userindex].SteamID;
-                updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
-                updateProgress(userindex, bots.Result.length);
-            }
+            let profileLink = "profiles/" + bots.Result[userindex].SteamID;
+            updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
+            updateProgress(userindex, bots.Result.length);
 
             let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
             let xhr = new XMLHttpRequest();
@@ -1000,33 +1178,16 @@
                                 }
                             });
                             name = name.trim();
+                            let markethash = myBadges[index].cards.find(card => card.number === i).hash;
                             let icon = badgeCards[i].querySelector(".gamecard").src.trim();
                             let newcard = {
                                 item: name,
+                                hash: markethash,
                                 count: Number(quantity),
                                 iconUrl: icon,
                             };
                             debugPrint(JSON.stringify(newcard));
                             botBadges[index].cards.push(newcard);
-                            if (userindex === -1) {
-                                //maybe save whole hash with .split("/")[5] ?
-                                cardNames.add(icon.substring(icon.length - 5) + "." + botBadges[index].appId + "-" + name);
-                            }
-                        }
-
-                        //Check for same hash but different name, ask user to report
-                        if (userindex === -1) {
-                            for (let j = 0; j < botBadges[index].cards.length; j++) {
-                                for (let i = 0; i < botBadges[index].cards.length; i++) {
-                                    if (
-                                        i !== j &&
-                                        botBadges[index].cards[i].name !== botBadges[index].cards[j].name &&
-                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) === botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)
-                                    ) {
-                                        unsafeWindow.ShowAlertDialog("WARNING", "Different cards have same signature, please report this: " + botBadges[index].appId);
-                                    }
-                                }
-                            }
                         }
 
                         index++;
@@ -1118,13 +1279,6 @@
             debugPrint("badge " + i + JSON.stringify(botBadges[i]));
 
             botBadges[i].cards.sort((a, b) => b.count - a.count);
-            if (userindex < 0) {
-                if (botBadges[i].cards[0].count - botBadges[i].cards[botBadges[i].cards.length - 1].count < 2) {
-                    //nothing to match, remove from list.
-                    botBadges.splice(i, 1);
-                    continue;
-                }
-            }
             let totalCards = 0;
             for (let j = 0; j < botBadges[i].maxCards; j++) {
                 totalCards += botBadges[i].cards[j].count;
@@ -1135,33 +1289,18 @@
         }
         debugTimeEnd("Filter and sort");
 
-        if (userindex < 0) {
-            if (botBadges.length === 0) {
-                hideThrobber();
-                updateMessage("No cards to match");
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.parentNode.removeChild(stopButton);
-                return;
-            } else {
-                SaveParams();
-                myBadges = deepClone(botBadges);
-                GetCards(0, 0);
-                return;
-            }
-        } else {
-            debugPrint(bots.Result[userindex].SteamID);
-            compareCards(userindex, function () {
-                setTimeout(
-                    (function (userindex) {
-                        return function () {
-                            GetCards(0, userindex);
-                        };
-                    })(userindex + 1),
-                    globalSettings.weblimiter,
-                );
-            });
-        }
+        debugPrint(bots.Result[userindex].SteamID);
+        compareCards(userindex, function () {
+            setTimeout(
+                (function (userindex) {
+                    return function () {
+                        GetCards(0, userindex);
+                    };
+                })(userindex + 1),
+                globalSettings.weblimiter,
+            );
+        });
+
     }
 
     function getBadges(page) {
@@ -1250,7 +1389,7 @@
                     } else {
                         setTimeout(
                             function () {
-                                GetCards(0, -1);
+                                GetOwnCards(0);
                             },
                             globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                         );
@@ -1484,6 +1623,9 @@
         requestFunc({
             method: "GET",
             url: requestUrl,
+            headers: {
+                "User-Agent": "ASF-STM/" + GM_info.version
+            },
             onload: function (response) {
                 if (response.status !== 200) {
                     disableButton();
