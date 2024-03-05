@@ -950,7 +950,7 @@
                                         hash: xhr.response.badgedata.rgCards[i].markethash,
                                         count: xhr.response.badgedata.rgCards[i].owned,
                                         iconUrl: xhr.response.badgedata.rgCards[i].imgurl,
-                                        number: i
+                                        number: i,
                                     };
                                     debugPrint(JSON.stringify(newcard));
                                     myBadges[index].cards.push(newcard);
@@ -968,14 +968,14 @@
                                 );
                                 return;
                             } else {
-                                debugPrint("less than 5 cards in a badge - something is wrong")
+                                debugPrint("less than 5 cards in a badge - something is wrong");
                                 debugPrint(JSON.stringify(xhr.response));
                                 errors++;
                             }
                         } else {
                             updateMessage("Error getting own badge data, badge: " + myBadges[index].appId);
                             if (xhr.response != undefined) {
-                                debugPrint("eresult = "+xhr.response.eresult);
+                                debugPrint("eresult = " + xhr.response.eresult);
                             }
                             hideThrobber();
                             enableButton();
@@ -1083,7 +1083,7 @@
             updateMessage("No cards to match");
             enableButton();
             let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.parentNode.removeChild(stopButton);
+            stopButton.parentNode.removeChild(stopButton);
             return;
         } else {
             SaveParams();
@@ -1107,11 +1107,12 @@
             return;
         }
 
-        if (((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
+        if (
+            (bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
             (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
-             bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
-             (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
-             blacklist.includes(bots.Result[userindex].SteamID))
+            bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
+            (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
+            blacklist.includes(bots.Result[userindex].SteamID)
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
             debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
@@ -1179,7 +1180,7 @@
                                 }
                             });
                             name = name.trim();
-                            let markethash = myBadges[index].cards.find(card => card.number === i).hash;
+                            let markethash = myBadges[index].cards.find((card) => card.number === i).hash;
                             let icon = badgeCards[i].querySelector(".gamecard").src.trim();
                             let newcard = {
                                 item: name,
@@ -1302,7 +1303,6 @@
                 globalSettings.weblimiter,
             );
         });
-
     }
 
     function getBadges(page) {
@@ -1626,7 +1626,7 @@
             method: "GET",
             url: requestUrl,
             headers: {
-                "User-Agent": "ASF-STM/" + GM_info.version
+                "User-Agent": "ASF-STM/" + GM_info.version,
             },
             onload: function (response) {
                 if (response.status !== 200) {
@@ -1795,7 +1795,7 @@
                 inv = inv.rgInventory;
                 Object.keys(inv).forEach(function (item) {
                     // add all matching cards to temporary dict
-                    index = requestedCards.findIndex((elem) =>(elem == inv[item].market_hash_name));
+                    index = requestedCards.findIndex((elem) => elem == inv[item].market_hash_name);
                     if (index > -1) {
                         if (tmpCards[requestedCards[index]] === undefined) {
                             tmpCards[requestedCards[index]] = [];
