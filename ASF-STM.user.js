@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.0
+// @version         4.1
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -488,7 +488,7 @@
         if (tradeParams.cardNames === undefined) {
             tradeParams.cardNames = Array.from(cardNames);
         }
-        console.warn(JSON.stringify(tradeParams.filter));
+        debugPrint(JSON.stringify(tradeParams.filter));
         localStorage.setItem("Ryzhehvost.ASF.STM.Params", JSON.stringify(tradeParams));
     }
 
@@ -1575,6 +1575,11 @@
         maxPages = 1;
         stop = false;
         myBadges.length = 0;
+        cardNames = new Set();
+        tradeParams = {
+            matches: {},
+            filter: [],
+        };
         getBadges(1);
     }
 
@@ -1751,6 +1756,7 @@
             }
         }
     } else {
+
         //Code below is a heavily modified version of SteamTrade Matcher Userscript by Tithen-Firion
         //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
 
@@ -1861,6 +1867,13 @@
                 unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
             }
 
+            let notif = document.createElement("span");
+            notif.setAttribute("style", "color:#00FF00; opacity:0; transition: opacity 3s;");
+            notif.appendChild(document.createTextNode("(All cards added successfully)"));
+            let anchor = document.getElementsByClassName("trade_partner_headline")[0];
+            anchor.appendChild(notif);
+            window.getComputedStyle(notif).opacity;
+            notif.style.opacity = 1;
             debugPrint("everything done");
         }
 
@@ -1937,6 +1950,7 @@
                 if (matches === undefined) {
                     throw new Error("no matches with this partner");
                 }
+                debugPrint(JSON.stringify(matches));
                 for (let i = 0; i < filter.length; i++) {
                     let appid = filter[i];
 
@@ -1944,10 +1958,12 @@
                         //can happen, filter is just allowed appids, not necessaryly available on this bot.
                         debugPrint("no such appid in matches: " + appid);
                     } else {
+                        debugPrint("adding matches for appid: " + appid);
                         Cards[0] = Cards[0].concat(matches[appid].send.map((card) => decodeURIComponent(params.cardNames[card])));
                         Cards[1] = Cards[1].concat(matches[appid].receive.map((card) => decodeURIComponent(params.cardNames[card])));
                     }
                 }
+                debugPrint(JSON.stringify(Cards));
 
                 if (Cards[0].length !== Cards[1].length) {
                     unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
