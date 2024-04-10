@@ -1756,7 +1756,6 @@
             }
         }
     } else {
-
         //Code below is a heavily modified version of SteamTrade Matcher Userscript by Tithen-Firion
         //Original can be found on https://github.com/Tithen-Firion/STM-UserScript
 
