@@ -10,11 +10,13 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         3.5
+// @version         4.1
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
 // @grant           GM_xmlhttpRequest
+// @downloadURL https://update.greasyfork.org/scripts/404754/ASF%20STM.user.js
+// @updateURL https://update.greasyfork.org/scripts/404754/ASF%20STM.meta.js
 // ==/UserScript==
 
 (function () {
@@ -486,7 +488,7 @@
         if (tradeParams.cardNames === undefined) {
             tradeParams.cardNames = Array.from(cardNames);
         }
-        console.warn(JSON.stringify(tradeParams.filter));
+        debugPrint(JSON.stringify(tradeParams.filter));
         localStorage.setItem("Ryzhehvost.ASF.STM.Params", JSON.stringify(tradeParams));
     }
 
@@ -750,7 +752,7 @@
             }
             for (let c = 0; c < itemsToSend[i].cards.length; c++) {
                 for (let a = 0; a < itemsToSend[i].cards[c].count; a++) {
-                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].iconUrl.substring(itemsToSend[i].cards[c].iconUrl.length - 5) + "." + itemsToSend[i].appId + "-" + itemsToSend[i].cards[c].item);
+                    let cardID = tradeParams.cardNames.indexOf(itemsToSend[i].cards[c].hash);
                     tradeParams.matches[partner][itemsToSend[i].appId].send.push(cardID);
                 }
             }
@@ -761,7 +763,7 @@
             }
             for (let c = 0; c < itemsToReceive[i].cards.length; c++) {
                 for (let a = 0; a < itemsToReceive[i].cards[c].count; a++) {
-                    let cardID = tradeParams.cardNames.indexOf(itemsToReceive[i].cards[c].iconUrl.substring(itemsToReceive[i].cards[c].iconUrl.length - 5) + "." + itemsToReceive[i].appId + "-" + itemsToReceive[i].cards[c].item);
+                    let cardID = tradeParams.cardNames.indexOf(itemsToReceive[i].cards[c].hash);
                     tradeParams.matches[partner][itemsToReceive[i].appId].receive.push(cardID);
                 }
             }
@@ -793,7 +795,7 @@
                     //index of card they give
                     if (theirBadge.cards[j].count > 0) {
                         //try to match
-                        let myInd = myBadge.cards.findIndex((a) => a.item === theirBadge.cards[j].item); //index of slot where we receive card
+                        let myInd = myBadge.cards.findIndex((a) => a.number === theirBadge.cards[j].number); //index of slot where we receive card
                         if ((myState === 0 && myBadge.cards[myInd].count < myBadge.maxSets) || (myState === 1 && myBadge.cards[myInd].count < myBadge.lastSet)) {
                             //we need this ^Kfor the Emperor
                             debugPrint("we need this: " + theirBadge.cards[j].item + " (" + theirBadge.cards[j].count + ")");
@@ -805,7 +807,7 @@
                                 if ((myState === 0 && myBadge.cards[k].count > myBadge.maxSets) || (myState === 1 && myBadge.cards[k].count > myBadge.lastSet)) {
                                     //that's fine for us
                                     debugPrint("it's a good trade for us");
-                                    let theirInd = theirBadge.cards.findIndex((a) => a.item === myBadge.cards[k].item); //index of slot where they will receive card
+                                    let theirInd = theirBadge.cards.findIndex((a) => a.number === myBadge.cards[k].number); //index of slot where they will receive card
                                     if (!bots.Result[index].MatchEverything) {
                                         //make sure it's neutral+ for them
                                         if (theirBadge.cards[theirInd].count >= theirBadge.cards[j].count) {
@@ -819,11 +821,13 @@
                                         item: myBadge.cards[k].item,
                                         count: 1,
                                         iconUrl: myBadge.cards[k].iconUrl,
+                                        hash: myBadge.cards[k].hash,
                                     };
                                     let itemToReceive = {
                                         item: theirBadge.cards[j].item,
                                         count: 1,
                                         iconUrl: theirBadge.cards[j].iconUrl,
+                                        hash: theirBadge.cards[j].hash,
                                     };
                                     //fill items to send
                                     let sendmatch = itemsToSend.find((item) => item.appId == myBadge.appId);
@@ -835,7 +839,7 @@
                                         };
                                         itemsToSend.push(newMatch);
                                     } else {
-                                        let existingCard = sendmatch.cards.find((a) => a.item === itemToSend.item);
+                                        let existingCard = sendmatch.cards.find((a) => a.hash === itemToSend.hash);
                                         if (existingCard === undefined) {
                                             sendmatch.cards.push(itemToSend);
                                         } else {
@@ -857,7 +861,7 @@
                                         };
                                         itemsToReceive.push(newMatch);
                                     } else {
-                                        let existingCard = receiveMatch.cards.find((a) => a.item === itemToReceive.item);
+                                        let existingCard = receiveMatch.cards.find((a) => a.hash === itemToReceive.hash);
                                         if (existingCard === undefined) {
                                             receiveMatch.cards.push(itemToReceive);
                                         } else {
@@ -904,6 +908,190 @@
         }
     }
 
+    function GetOwnCards(index) {
+        debugPrint("GetOwnCards " + index);
+
+        if (index === 0) {
+            for (let i = 0; i < myBadges.length; i++) {
+                myBadges[i].cards.length = 0;
+            }
+        }
+        if (index < myBadges.length) {
+            let profileLink;
+            profileLink = myProfileLink;
+            updateMessage("Getting our data for badge " + (index + 1) + " of " + myBadges.length);
+            updateProgress(index, myBadges.length);
+
+            let url = "https://steamcommunity.com/" + profileLink + "/ajaxgetbadgeinfo/" + myBadges[index].appId;
+            let xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.responseType = "json";
+            // eslint-disable-next-line
+            xhr.onload = function () {
+                if (stop) {
+                    updateMessage("Interrupted by user");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+                let status = xhr.status;
+                if (status === 200) {
+                    try {
+                        debugPrint("processing badge " + myBadges[index].appId);
+                        if (xhr.response != undefined && xhr.response.eresult == 1) {
+                            if (xhr.response.badgedata.rgCards.length >= 5) {
+                                errors = 0;
+                                myBadges[index].maxCards = xhr.response.badgedata.rgCards.length;
+                                for (let i = 0; i < myBadges[index].maxCards; i++) {
+                                    let newcard = {
+                                        item: xhr.response.badgedata.rgCards[i].title,
+                                        hash: xhr.response.badgedata.rgCards[i].markethash,
+                                        count: xhr.response.badgedata.rgCards[i].owned,
+                                        iconUrl: xhr.response.badgedata.rgCards[i].imgurl,
+                                        number: i,
+                                    };
+                                    debugPrint(JSON.stringify(newcard));
+                                    myBadges[index].cards.push(newcard);
+                                    cardNames.add(xhr.response.badgedata.rgCards[i].markethash);
+                                }
+
+                                index++;
+                                setTimeout(
+                                    (function (index) {
+                                        return function () {
+                                            GetOwnCards(index);
+                                        };
+                                    })(index),
+                                    globalSettings.weblimiter,
+                                );
+                                return;
+                            } else {
+                                debugPrint("less than 5 cards in a badge - something is wrong");
+                                debugPrint(JSON.stringify(xhr.response));
+                                errors++;
+                            }
+                        } else {
+                            updateMessage("Error getting own badge data, badge: " + myBadges[index].appId);
+                            if (xhr.response != undefined) {
+                                debugPrint("eresult = " + xhr.response.eresult);
+                            }
+                            hideThrobber();
+                            enableButton();
+                            let stopButton = document.getElementById("asf_stm_stop");
+                            stopButton.parentNode.removeChild(stopButton);
+                            return;
+                        }
+                    } catch (error) {
+                        debugPrint(error);
+                        debugPrint(JSON.stringify(xhr.response));
+                        errors++;
+                    }
+                } else {
+                    errors++;
+                }
+                if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
+                    setTimeout(
+                        (function (index) {
+                            return function () {
+                                GetOwnCards(index);
+                            };
+                        })(index),
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                    );
+                } else {
+                    if (status !== 200) {
+                        updateMessage("Error getting badge data, ERROR " + status);
+                    } else {
+                        debugPrint("Error getting own badge data, wrong badge " + myBadges[index].appId);
+                        setTimeout(
+                            (function (index) {
+                                return function () {
+                                    GetOwnCards(index);
+                                };
+                            })(index),
+                            globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                        );
+                    }
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+            };
+            // eslint-disable-next-line
+            xhr.onerror = function () {
+                if (stop) {
+                    updateMessage("Interrupted by user");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+                errors++;
+                if (errors <= globalSettings.maxErrors) {
+                    setTimeout(
+                        (function (index) {
+                            return function () {
+                                GetOwnCards(index);
+                            };
+                        })(index),
+                        globalSettings.weblimiter + globalSettings.errorLimiter * errors,
+                    );
+                    return;
+                } else {
+                    debugPrint("error");
+                    updateMessage("Error getting badge data");
+                    hideThrobber();
+                    enableButton();
+                    let stopButton = document.getElementById("asf_stm_stop");
+                    stopButton.parentNode.removeChild(stopButton);
+                    return;
+                }
+            };
+            xhr.send();
+            return; //do this synchronously to avoid rate limit
+        }
+        debugPrint("populated");
+
+        debugTime("Filter and sort");
+        for (let i = myBadges.length - 1; i >= 0; i--) {
+            debugPrint("badge " + i + JSON.stringify(myBadges[i]));
+
+            myBadges[i].cards.sort((a, b) => b.count - a.count);
+            if (myBadges[i].cards[0].count - myBadges[i].cards[myBadges[i].cards.length - 1].count < 2) {
+                //nothing to match, remove from list.
+                myBadges.splice(i, 1);
+                continue;
+            }
+
+            let totalCards = 0;
+            for (let j = 0; j < myBadges[i].maxCards; j++) {
+                totalCards += myBadges[i].cards[j].count;
+            }
+            myBadges[i].maxSets = Math.floor(totalCards / myBadges[i].maxCards);
+            myBadges[i].lastSet = Math.ceil(totalCards / myBadges[i].maxCards);
+            debugPrint("totalCards=" + totalCards + " maxSets=" + myBadges[i].maxSets + " lastSet=" + myBadges[i].lastSet);
+        }
+        debugTimeEnd("Filter and sort");
+
+        if (myBadges.length === 0) {
+            hideThrobber();
+            updateMessage("No cards to match");
+            enableButton();
+            let stopButton = document.getElementById("asf_stm_stop");
+            stopButton.parentNode.removeChild(stopButton);
+            return;
+        } else {
+            SaveParams();
+            GetCards(0, 0);
+            return;
+        }
+    }
+
     function GetCards(index, userindex) {
         debugPrint("GetCards " + index + " : " + userindex);
 
@@ -920,12 +1108,11 @@
         }
 
         if (
-            userindex >= 0 &&
-            ((bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
-                (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
-                bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
-                (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
-                blacklist.includes(bots.Result[userindex].SteamID))
+            (bots.Result[userindex].MatchEverything && !globalSettings.anyBots) ||
+            (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
+            bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
+            (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
+            blacklist.includes(bots.Result[userindex].SteamID)
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
             debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
@@ -945,16 +1132,9 @@
             }
         }
         if (index < botBadges.length) {
-            let profileLink;
-            if (userindex === -1) {
-                profileLink = myProfileLink;
-                updateMessage("Getting our data for badge " + (index + 1) + " of " + botBadges.length);
-                updateProgress(index, botBadges.length);
-            } else {
-                profileLink = "profiles/" + bots.Result[userindex].SteamID;
-                updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
-                updateProgress(userindex, bots.Result.length);
-            }
+            let profileLink = "profiles/" + bots.Result[userindex].SteamID;
+            updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
+            updateProgress(userindex, bots.Result.length);
 
             let url = "https://steamcommunity.com/" + profileLink + "/gamecards/" + botBadges[index].appId;
             let xhr = new XMLHttpRequest();
@@ -1000,33 +1180,17 @@
                                 }
                             });
                             name = name.trim();
+                            let markethash = myBadges[index].cards.find((card) => card.number === i).hash;
                             let icon = badgeCards[i].querySelector(".gamecard").src.trim();
                             let newcard = {
                                 item: name,
+                                hash: markethash,
                                 count: Number(quantity),
                                 iconUrl: icon,
+                                number: i,
                             };
                             debugPrint(JSON.stringify(newcard));
                             botBadges[index].cards.push(newcard);
-                            if (userindex === -1) {
-                                //maybe save whole hash with .split("/")[5] ?
-                                cardNames.add(icon.substring(icon.length - 5) + "." + botBadges[index].appId + "-" + name);
-                            }
-                        }
-
-                        //Check for same hash but different name, ask user to report
-                        if (userindex === -1) {
-                            for (let j = 0; j < botBadges[index].cards.length; j++) {
-                                for (let i = 0; i < botBadges[index].cards.length; i++) {
-                                    if (
-                                        i !== j &&
-                                        botBadges[index].cards[i].name !== botBadges[index].cards[j].name &&
-                                        botBadges[index].cards[j].iconUrl.substring(botBadges[index].cards[j].iconUrl.length - 5) === botBadges[index].cards[i].iconUrl.substring(botBadges[index].cards[i].iconUrl.length - 5)
-                                    ) {
-                                        unsafeWindow.ShowAlertDialog("WARNING", "Different cards have same signature, please report this: " + botBadges[index].appId);
-                                    }
-                                }
-                            }
                         }
 
                         index++;
@@ -1118,13 +1282,6 @@
             debugPrint("badge " + i + JSON.stringify(botBadges[i]));
 
             botBadges[i].cards.sort((a, b) => b.count - a.count);
-            if (userindex < 0) {
-                if (botBadges[i].cards[0].count - botBadges[i].cards[botBadges[i].cards.length - 1].count < 2) {
-                    //nothing to match, remove from list.
-                    botBadges.splice(i, 1);
-                    continue;
-                }
-            }
             let totalCards = 0;
             for (let j = 0; j < botBadges[i].maxCards; j++) {
                 totalCards += botBadges[i].cards[j].count;
@@ -1135,33 +1292,17 @@
         }
         debugTimeEnd("Filter and sort");
 
-        if (userindex < 0) {
-            if (botBadges.length === 0) {
-                hideThrobber();
-                updateMessage("No cards to match");
-                enableButton();
-                let stopButton = document.getElementById("asf_stm_stop");
-                stopButton.parentNode.removeChild(stopButton);
-                return;
-            } else {
-                SaveParams();
-                myBadges = deepClone(botBadges);
-                GetCards(0, 0);
-                return;
-            }
-        } else {
-            debugPrint(bots.Result[userindex].SteamID);
-            compareCards(userindex, function () {
-                setTimeout(
-                    (function (userindex) {
-                        return function () {
-                            GetCards(0, userindex);
-                        };
-                    })(userindex + 1),
-                    globalSettings.weblimiter,
-                );
-            });
-        }
+        debugPrint(bots.Result[userindex].SteamID);
+        compareCards(userindex, function () {
+            setTimeout(
+                (function (userindex) {
+                    return function () {
+                        GetCards(0, userindex);
+                    };
+                })(userindex + 1),
+                globalSettings.weblimiter,
+            );
+        });
     }
 
     function getBadges(page) {
@@ -1250,7 +1391,7 @@
                     } else {
                         setTimeout(
                             function () {
-                                GetCards(0, -1);
+                                GetOwnCards(0);
                             },
                             globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                         );
@@ -1434,6 +1575,11 @@
         maxPages = 1;
         stop = false;
         myBadges.length = 0;
+        cardNames = new Set();
+        tradeParams = {
+            matches: {},
+            filter: [],
+        };
         getBadges(1);
     }
 
@@ -1484,6 +1630,9 @@
         requestFunc({
             method: "GET",
             url: requestUrl,
+            headers: {
+                "User-Agent": "ASF-STM/" + GM_info.version,
+            },
             onload: function (response) {
                 if (response.status !== 200) {
                     disableButton();
@@ -1651,26 +1800,12 @@
                 inv = inv.rgInventory;
                 Object.keys(inv).forEach(function (item) {
                     // add all matching cards to temporary dict
-                    index = requestedCards.findIndex(function (elem) {
-                        if (globalSettings.debug) {
-                            if (inv[item].icon_url !== inv[item].icon_url_large) {
-                                let tagindex = inv[item].tags.findIndex((tag) => tag.category === "item_class");
-                                if (tagindex > -1 && inv[item].tags[tagindex].internal_name === "item_class_2") {
-                                    debugPrint("DIFFERENT ICONS: " + inv[item].name + ":\n" + inv[item].icon_url + "\n" + inv[item].icon_url_large);
-                                }
-                            }
-                        }
-                        if (elem.appid == inv[item].market_fee_app) {
-                            debugPrint("name: " + inv[item].name + ":" + elem.name);
-                            debugPrint("icon: " + inv[item].icon_url + ":" + elem.hash);
-                        }
-                        return elem.appid == inv[item].market_fee_app && (elem.name === inv[item].name || inv[item].icon_url.endsWith(elem.hash));
-                    });
+                    index = requestedCards.findIndex((elem) => elem == inv[item].market_hash_name);
                     if (index > -1) {
-                        if (tmpCards[requestedCards[index].id] === undefined) {
-                            tmpCards[requestedCards[index].id] = [];
+                        if (tmpCards[requestedCards[index]] === undefined) {
+                            tmpCards[requestedCards[index]] = [];
                         }
-                        tmpCards[requestedCards[index].id].push({ type: inv[item].type, element: inv[item].element, id: inv[item].id });
+                        tmpCards[requestedCards[index]].push({ type: inv[item].type, element: inv[item].element, id: inv[item].id });
                     }
                 });
                 if (g_s.order === "SORT") {
@@ -1681,7 +1816,7 @@
                 }
                 // add cards to trade in order given by STM
                 requestedCards.forEach(function (elem) {
-                    currentCards = tmpCards[elem.id] || []; // all cards from inventory with requested signature
+                    currentCards = tmpCards[elem] || []; // all cards from inventory with requested signature
                     if (currentCards.length === 0) {
                         failLater = true;
                     } else {
@@ -1731,6 +1866,13 @@
                 unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
             }
 
+            let notif = document.createElement("span");
+            notif.setAttribute("style", "color:#00FF00; opacity:0; transition: opacity 3s;");
+            notif.appendChild(document.createTextNode("(All cards added successfully)"));
+            let anchor = document.getElementsByClassName("trade_partner_headline")[0];
+            anchor.appendChild(notif);
+            window.getComputedStyle(notif).opacity;
+            notif.style.opacity = 1;
             debugPrint("everything done");
         }
 
@@ -1782,23 +1924,6 @@
 
         ///// STM functions /////
 
-        function ParseCard(card) {
-            let decodedVar = decodeURIComponent(card);
-            const re = new RegExp("(.{5}).([0-9]+)-(.*)");
-            let result = decodedVar.match(re);
-            if (result && result.length === 4) {
-                return {
-                    id: card,
-                    appid: result[2],
-                    name: result[3],
-                    hash: result[1],
-                };
-            } else {
-                unsafeWindow.ShowAlertDialog("ASF STM Error", "Failed to parse vars, please report it!");
-                throw "Failed to parse";
-            }
-        }
-
         try {
             if (window.location.href.includes("source=asfstm")) {
                 LoadConfig();
@@ -1824,6 +1949,7 @@
                 if (matches === undefined) {
                     throw new Error("no matches with this partner");
                 }
+                debugPrint(JSON.stringify(matches));
                 for (let i = 0; i < filter.length; i++) {
                     let appid = filter[i];
 
@@ -1831,10 +1957,12 @@
                         //can happen, filter is just allowed appids, not necessaryly available on this bot.
                         debugPrint("no such appid in matches: " + appid);
                     } else {
-                        Cards[0] = Cards[0].concat(matches[appid].send.map((card) => ParseCard(params.cardNames[card])));
-                        Cards[1] = Cards[1].concat(matches[appid].receive.map((card) => ParseCard(params.cardNames[card])));
+                        debugPrint("adding matches for appid: " + appid);
+                        Cards[0] = Cards[0].concat(matches[appid].send.map((card) => decodeURIComponent(params.cardNames[card])));
+                        Cards[1] = Cards[1].concat(matches[appid].receive.map((card) => decodeURIComponent(params.cardNames[card])));
                     }
                 }
+                debugPrint(JSON.stringify(Cards));
 
                 if (Cards[0].length !== Cards[1].length) {
                     unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
