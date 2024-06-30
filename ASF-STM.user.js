@@ -552,6 +552,17 @@
         });
     }
 
+    function filterAllEventHandler(event) {
+        let appIds = event.target.name.split(',');
+        appIds = appIds.map(id => 'astm_' + id);
+        for(let appId of appIds) {
+            let target = document.querySelector('#' + appId);
+            if (target && target.checked) {
+                target.click();
+            }
+        }
+    }
+
     function populateCards(item) {
         let htmlCards = "";
         for (let j = 0; j < item.cards.length; j++) {
@@ -615,11 +626,13 @@
 
         let matches = "";
         let any = "";
+        let appIdList = [];
         if (bots.Result[index].MatchEverything) {
             any = `&nbsp;<sup><span class="avatar_block_status_in-game" style="font-size: 8px; cursor:help" title="This bots trades for any cards within same set">&nbsp;ANY&nbsp;</span></sup>`;
         }
         for (let i = 0; i < itemsToSend.length; i++) {
             let appId = itemsToSend[i].appId;
+            appIdList.push(appId);
             let itemToReceive = itemsToReceive.find((a) => a.appId == appId);
             let gameName = itemsToSend[i].title;
             let display = "inline-block";
@@ -697,6 +710,11 @@
                   <div class="badge_title_stats">
                     <div class="btn_darkblue_white_innerfade btn_medium">
                       <span>
+                        <a class="filter_all" name="${appIdList.join()}" target="_blank" rel="noopener noreferrer" >Filter All</a>
+                      </span>
+                    </div>
+                    <div class="btn_darkblue_white_innerfade btn_medium">
+                      <span>
                         <a class="full_trade_url" href="${tradeUrlFull}" target="_blank" rel="noopener noreferrer" >Offer a trade for all</a>
                       </span>
                     </div>
@@ -725,6 +743,7 @@
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         let newChild = template.content.firstChild;
         newChild.querySelector(`#blacklist_${bots.Result[index].SteamID}`).addEventListener("click", blacklistEventHandler, true);
+        newChild.querySelector('.filter_all').parentNode.addEventListener('click', filterAllEventHandler);
         mainContentDiv.appendChild(newChild);
         checkRow(newChild);
     }
