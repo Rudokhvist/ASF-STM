@@ -28,7 +28,10 @@ So, since when I made this script, you have a third alternative - this script ca
 -   It may still lack some of STM features.
 
 Consider this a permanent beta version, it's very raw and may contain bugs. So, please, check every trade before sending and report bugs and suggestions.
-If you want to participate in development - script is now also available on github, feel free to send issues and pull requests there!
+If you want to participate in development - feel free to send issues and pull requests there!
+
+![ASF_STM](https://github.com/user-attachments/assets/25785010-27b2-492b-9c6c-ef80027b884b)
+
 
 ## Future plans and TODOs:
 
