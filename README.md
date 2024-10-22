@@ -32,7 +32,6 @@ If you want to participate in development - feel free to send issues and pull re
 
 ![ASF_STM](https://github.com/user-attachments/assets/25785010-27b2-492b-9c6c-ef80027b884b)
 
-
 ## Future plans and TODOs:
 
 -   For now script works only with regular cards. I plan to add foil cards matching too
