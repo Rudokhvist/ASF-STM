@@ -28,7 +28,7 @@ So, since when I made this script, you have a third alternative - this script ca
 -   It may still lack some of STM features.
 
 Consider this a permanent beta version, it's very raw and may contain bugs. So, please, check every trade before sending and report bugs and suggestions.
-If you want to participate in development - feel free to send issues and pull requests there!
+If you want to participate in development - feel free to send [issues](https://github.com/Rudokhvist/ASF-STM/issues) and [pull requests](https://github.com/Rudokhvist/ASF-STM/pulls)!
 
 ![ASF_STM](https://github.com/user-attachments/assets/25785010-27b2-492b-9c6c-ef80027b884b)
 
@@ -37,7 +37,7 @@ If you want to participate in development - feel free to send issues and pull re
 -   For now script works only with regular cards. I plan to add foil cards matching too
 -   Add an option to match cards for already completed badges too.
 -   Add whitelist/blacklist of matched apps, to make it possible to match only a couple of needed badges without wasting time on the rest.
--   ??? your suggestions. Use issues sections for those. (LOL, I have too much TODO already, fat chance!)
+-   ??? your suggestions. Use [issues](https://github.com/Rudokhvist/ASF-STM/issues) for those. (LOL, I have too much TODO already, fat chance!)
 
 ## Changelog (may be incomplete, just for nostalgia reasons)
 
