@@ -56,7 +56,9 @@ v2.5 2022-12-16 - More fixes</br>
 v2.7 2022-12-18 - Greatly improved fetching of card classids. Added caching of bots list to reduce load on ASF backend.</br>
 v2.8 2022-12-22 - Fixed a bug that prevented functioning during sale.</br>
 v2.9 2023-01-23 - ASF backend api update</br>
-v2.10 2023-04-21 - Scroll added to filter window, results sorted by game name, Thanks to ngoclong19 for PR!</br>
+v2.10 2023-04-21 - Scroll added to filter window, results sorted by game name, Thanks to [@ngoclong19](https://github.com/ngoclong19) for PR!</br>
 v3.3 2023-07-06 - Major update! Integrated (modified) STM helper script, added configuration, added blacklist, fixed bugs.</br>
+v4.1 2024-07-01 - Major update - rework communication with helper script part, prevent "item not found errors", minor fixes and improvements</br>
+v4.2 2024-10-22 - Add "Filter all" button to matches, contribution byt [@iBreakEverything](https://github.com/iBreakEverything)
 
 ## Hopefully it will be useful to someone.

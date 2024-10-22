@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.1
+// @version         4.2
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -553,10 +553,10 @@
     }
 
     function filterAllEventHandler(event) {
-        let appIds = event.target.name.split(',');
-        appIds = appIds.map(id => 'astm_' + id);
-        for(let appId of appIds) {
-            let target = document.querySelector('#' + appId);
+        let appIds = event.target.name.split(",");
+        appIds = appIds.map((id) => "astm_" + id);
+        for (let appId of appIds) {
+            let target = document.querySelector("#" + appId);
             if (target && target.checked) {
                 target.click();
             }
@@ -743,7 +743,7 @@
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         let newChild = template.content.firstChild;
         newChild.querySelector(`#blacklist_${bots.Result[index].SteamID}`).addEventListener("click", blacklistEventHandler, true);
-        newChild.querySelector('.filter_all').parentNode.addEventListener('click', filterAllEventHandler);
+        newChild.querySelector(".filter_all").parentNode.addEventListener("click", filterAllEventHandler);
         mainContentDiv.appendChild(newChild);
         checkRow(newChild);
     }
