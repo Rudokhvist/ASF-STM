@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.2
+// @version         4.3
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -33,6 +33,7 @@
     let globalSettings = null;
     let blacklist = [];
     let defaultSettings = {
+        matchFriends: false,
         anyBots: true,
         fairBots: true,
         sortByName: true,
@@ -87,7 +88,7 @@
     }
     .asf_stm_tabs .asf_stm_content {
         display: none;
-        overflow: hidden;
+        overflow: scroll;
         width: 630px;
         height: 380px;
         padding: 5px;
@@ -192,6 +193,12 @@
                id="asf_stm_tab1" type="radio"><label
                for="asf_stm_tab1">Matcher</label>
                   <div id="asf_stm_tab-content1" class="asf_stm_content">
+                  <fieldset style="padding-top: 0px;"><legend>MATCH FRIENDS</legend>
+                  <div style="margin-bottom: 6px;">Match with friends (only public inventories)::&nbsp;
+                  <input style="background-color: #171d25; color: white;"
+               id="matchFriends" ${globalSettings.matchFriends ? 'checked="checked"' : ""} type="checkbox">
+                  </div>
+                  </fieldset>
                   <fieldset style="padding-top: 0px;"><legend>BOTS TO MATCH</legend>
                   <div style="margin-bottom: 6px;"> Match with "Any"
               bots:&nbsp;<input style="background-color: #171d25; color: white;"
@@ -416,6 +423,7 @@
 
         unsafeWindow.ShowConfirmDialog("ASF STM Configuration", configDialog, "Save", "Cancel", "Reset").done(function (button) {
             if (button === "OK") {
+                globalSettings.matchFriends = configDialog.querySelector("#matchFriends").checked;
                 globalSettings.anyBots = configDialog.querySelector("#anyBots").checked;
                 globalSettings.fairBots = configDialog.querySelector("#fairBots").checked;
                 globalSettings.sortByName = configDialog.querySelector("#sortByName").checked;
@@ -553,7 +561,7 @@
     }
 
     function filterAllEventHandler(event) {
-        let appIds = event.target.name.split(",");
+        let appIds = event.target.dataset.appids.split(",");
         appIds = appIds.map((id) => "astm_" + id);
         for (let appId of appIds) {
             let target = document.querySelector("#" + appId);
@@ -561,6 +569,23 @@
                 target.click();
             }
         }
+    }
+
+    /**
+     * Simple function to sanitize nicknames before adding them to the DOM.
+     * Taken from https://stackoverflow.com/a/48226843/5853386
+     */
+    function sanitizeNickname(nickname) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#x27;',
+            "/": '&#x2F;',
+        };
+        const reg = /[&<>"'/]/ig;
+        return nickname.replace(reg, (match)=>(map[match]));
     }
 
     function populateCards(item) {
@@ -621,9 +646,15 @@
             itemsToReceive.sort(compareNames);
         }
 
-        let tradeUrl = "https://steamcommunity.com/tradeoffer/new/?partner=" + getPartner(bots.Result[index].SteamID) + "&token=" + bots.Result[index].TradeToken + "&source=asfstm";
+        let tradeUrl = 'https://steamcommunity.com/tradeoffer/new/?partner=';
+        if (globalSettings.matchFriends) {
+            tradeUrl += `${bots.Result[index].SteamID}&source=asfstm`;
+        } else {
+            tradeUrl += `${getPartner(bots.Result[index].SteamID)}&token=${bots.Result[index].TradeToken}&source=asfstm`;
+        }
         debugPrint(tradeUrl);
 
+        let botProfileLink = globalSettings.matchFriends ? `${bots.Result[index].SteamIDText}` : `profiles/${bots.Result[index].SteamID}`;
         let matches = "";
         let any = "";
         let appIdList = [];
@@ -674,11 +705,11 @@
                             <div>${gameName}</div>
                           </a>
                         </div>
-                        <div class="btn_darkblue_white_innerfade btn_medium">
-                          <span>
-                            <a href="${tradeUrlApp}" target="_blank" rel="noopener noreferrer">Offer a trade</a>
-                          </span>
-                        </div>
+                        <a href="${tradeUrlApp}" target="_blank" rel="noopener noreferrer">
+                          <div class="btn_darkblue_white_innerfade btn_medium">
+                            <span>Offer a trade</span>
+                          </div>
+                        </a>
                       </div>
                       <div class="showcase_slot">
                           <div class="showcase_slot profile_header">
@@ -690,9 +721,11 @@
                           </span>
                       </div>
                       <div class="showcase_slot profile_header">
-                          <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_online badge_info_title badge_row_overlay ellipsis" style="height: 15px;">
-                            ${bots.Result[index].Nickname}
-                          </div>
+                          <a href="https://steamcommunity.com/${botProfileLink}/gamecards/${appId}/" target="_blank" rel="noopener noreferrer">
+                              <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_online badge_info_title badge_row_overlay ellipsis" style="height: 15px;">
+                                ${sanitizeNickname(bots.Result[index].Nickname)}
+                              </div>
+                          </a>
                         ${receiveResult}
                       </div>
                     </div>
@@ -708,26 +741,26 @@
               <div class="badge_row_inner">
                 <div class="badge_title_row guide_showcase_contributors">
                   <div class="badge_title_stats">
-                    <div class="btn_darkblue_white_innerfade btn_medium">
-                      <span>
-                        <a class="filter_all" name="${appIdList.join()}" target="_blank" rel="noopener noreferrer" >Filter All</a>
-                      </span>
-                    </div>
-                    <div class="btn_darkblue_white_innerfade btn_medium">
-                      <span>
-                        <a class="full_trade_url" href="${tradeUrlFull}" target="_blank" rel="noopener noreferrer" >Offer a trade for all</a>
-                      </span>
-                    </div>
+                    <a class="filter_all" target="_blank" rel="noopener noreferrer" >
+                      <div class="btn_darkblue_white_innerfade btn_medium" data-appids="${appIdList.join()}">
+                        <span data-appids="${appIdList.join()}">Filter All</span>
+                      </div>
+                    </a>
+                    <a class="full_trade_url" href="${tradeUrlFull}" target="_blank" rel="noopener noreferrer" >
+                      <div class="btn_darkblue_white_innerfade btn_medium">
+                        <span>Offer a trade for all</span>
+                      </div>
+                    </a>
                   </div>
                   <div style="float: left;" class="">
                     <div class="user_avatar playerAvatar online">
-                      <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">
+                      <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${botProfileLink}">
                         <img src="https://avatars.cloudflare.steamstatic.com/${bots.Result[index].AvatarHash === null ? "fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb" : bots.Result[index].AvatarHash}.jpg" />
                       </a>
                      </div>
                   </div>
                   <div class="badge_title">
-                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/profiles/${bots.Result[index].SteamID}">${bots.Result[index].Nickname}</a>${any}
+                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${botProfileLink}">${sanitizeNickname(bots.Result[index].Nickname)}</a>${any}
                     &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalInventoryCount} items)</span>
                     &ensp;<a id="blacklist_${bots.Result[index].SteamID}" data-tooltip-text="Blacklist this bot"  class="tooltip hover_tooltip"><img
                     src="https://community.cloudflare.steamstatic.com/public/images/skin_1/iconForumBan.png?v=1"></a>
@@ -1151,7 +1184,7 @@
             }
         }
         if (index < botBadges.length) {
-            let profileLink = "profiles/" + bots.Result[userindex].SteamID;
+            let profileLink = globalSettings.matchFriends ? `${bots.Result[userindex].SteamIDText}` : `profiles/${bots.Result[userindex].SteamID}`;
             updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
             updateProgress(userindex, bots.Result.length);
 
@@ -1172,8 +1205,13 @@
                 let status = xhr.status;
                 if (status === 200) {
                     debugPrint("processing badge " + botBadges[index].appId);
-                    if (null !== xhr.response.documentElement.querySelector("body.private_profile")) {
-                        debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);
+                    if (null !== xhr.response.documentElement.querySelector("body.private_profile")
+                    || (globalSettings.matchFriends && null === xhr.response.documentElement.querySelector(".badge_card_set_cards"))) {
+                        if (globalSettings.matchFriends) {
+                            debugPrint("friend has inventory set to friends-only (badges are private):" + bots.Result[userindex].SteamID);
+                        } else {
+                            debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);
+                        }
                         setTimeout(
                             (function (index, userindex) {
                                 return function () {
@@ -1523,12 +1561,14 @@
     }
 
     function buttonPressedEvent() {
-        if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success !== true || bots.cacheTime + botCacheTime < Date.now()) {
+        if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success !== true || bots.cacheTime + botCacheTime < Date.now() || globalSettings.matchFriends !== bots.friends) {
             debugPrint("Bot cache invalidated");
             fetchBots();
             return;
         }
-        bots.Result.sort(botSorter);
+        if (!globalSettings.matchFriends) {
+            bots.Result.sort(botSorter);
+        }
         disableButton();
         debugPrint(new Date(Date.now()));
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
@@ -1564,15 +1604,15 @@
                    transition-timing-function: ease; margin-right: -50%; padding: 5px; max-width: 40%; display: inline-block; border-radius: 2px;
                    background:${globalSettings.filterBackgroundColor}; color: #67c1f5;">
               <div style="white-space: nowrap;">Select:
-	          <a id="asf_stm_filter_all" class="commentthread_pagelinks">
-		        all
-	          </a>
-	          <a id="asf_stm_filter_none" class="commentthread_pagelinks">
-		        none
-	          </a>
-	          <a id="asf_stm_filter_invert" class="commentthread_pagelinks">
-		        invert
-	          </a>
+              <a id="asf_stm_filter_all" class="commentthread_pagelinks">
+                all
+              </a>
+              <a id="asf_stm_filter_none" class="commentthread_pagelinks">
+                none
+              </a>
+              <a id="asf_stm_filter_invert" class="commentthread_pagelinks">
+                invert
+              </a>
             </div>
             <hr />
             <div id="asf_stm_filters_body">
@@ -1640,6 +1680,9 @@
 
     function fetchBots() {
         let requestUrl = "https://asf.justarchi.net/Api/Listing/Bots";
+        if (globalSettings.matchFriends) {
+            requestUrl = "https://steamcommunity.com/actions/PlayerList/?type=friends";
+        }
         let requestFunc;
         if (typeof GM_xmlhttpRequest !== "function") {
             requestFunc = GM.xmlHttpRequest.bind(GM);
@@ -1661,10 +1704,39 @@
                     return;
                 }
                 try {
-                    let re = /("SteamID":)(\d+)/g;
-                    let fixedJson = response.response.replace(re, '$1"$2"'); //because fuck js
-                    bots = JSON.parse(fixedJson);
-                    bots.cacheTime = Date.now();
+                    if (globalSettings.matchFriends) {
+                        const parser = new DOMParser();
+                        const friendListDocument = parser.parseFromString(response.response, 'text/html');
+                        let steamID3 = [...friendListDocument.querySelectorAll('div.friendBlock')].map(x => x.dataset.miniprofile);
+                        let profile = [...friendListDocument.querySelectorAll('a.friendBlockLinkOverlay')].map(x => x.href.replace(/https:\/\/steamcommunity.com\//g, ''));
+                        let avatarHash = [...friendListDocument.querySelectorAll('img')].map(x => x.src.replaceAll(/(https:\/\/avatars.fastly.steamstatic.com\/)|(_medium\.jpg)/g, ''));
+                        let nickname = [...friendListDocument.querySelectorAll('div.friendBlockContent')].map(x => x.childNodes[0].data.trim());
+                        bots = {
+                            friends: true,
+                            Success: true,
+                            cacheTime: Date.now(),
+                            Result: profile.map((profileLink, index) => ({
+                                SteamIDText: profileLink,
+                                AvatarHash: avatarHash[index],
+                                MatchableTypes: [2, 3, 4, 5],
+                                MatchEverything: false,
+                                MaxTradeHoldDuration: 0,
+                                Nickname: nickname[index],
+                                SteamID: steamID3[index],
+                                TotalGamesCount: 100,
+                                TotalInventoryCount: 100,
+                                TotalItemsCount: 100,
+                                TradeToken: null
+                            })),
+                        };
+                    }
+                    else {
+                        let re = /("SteamID":)(\d+)/g;
+                        let fixedJson = response.response.replace(re, '$1"$2"'); //because fuck js
+                        bots = JSON.parse(fixedJson);
+                        bots.cacheTime = Date.now();
+                        bots.friends = false;
+                    }
                     if (bots.Success) {
                         debugPrint("found total " + bots.Result.length + " bots");
                         localStorage.setItem("Ryzhehvost.ASF.STM.BotCache", JSON.stringify(bots));
@@ -1724,7 +1796,7 @@
         debugPrint(profileRegex);
 
         let botCache = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.BotCache"));
-        if (botCache === null || botCache.cacheTime === undefined || botCache.cacheTime === null || botCache.cacheTime + botCacheTime < Date.now()) {
+        if (botCache === null || botCache.cacheTime === undefined || botCache.cacheTime === null || botCache.cacheTime + botCacheTime < Date.now() || globalSettings.matchFriends !== botCache.friends) {
             botCache = null;
             debugPrint("Bot cache invalidated");
         } else {
