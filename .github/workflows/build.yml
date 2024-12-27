@@ -39,7 +39,7 @@ jobs:
           echo "VERSION=$VERSION"
           echo "LATEST_RELEASE_VERSION=$LATEST_RELEASE_VERSION"
       - name: Release
-        #if: ${{ env.SHOULD_RELEASE == 'true' }}
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           draft: true
