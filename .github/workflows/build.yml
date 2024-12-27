@@ -24,7 +24,7 @@ jobs:
         run: |
           echo "VERSION=$(cat templates/version)" >> $GITHUB_ENV
           echo "LATEST_RELEASE_VERSION=${GITHUB_REF#refs/*/}" || echo "LATEST_RELEASE_VERSION=0.0" >> $GITHUB_ENV
-          if [ "$VERSION" -gt "$LATEST_RELEASE_VERSION" ]; then
+          if awk "BEGIN {exit !($VERSION > $LATEST_RELEASE_VERSION)}"; then
             echo "SHOULD_RELEASE=true" >> $GITHUB_ENV
           else
             echo "SHOULD_RELEASE=false" >> $GITHUB_ENV
