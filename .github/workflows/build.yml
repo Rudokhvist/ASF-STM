@@ -44,14 +44,14 @@ jobs:
           while IFS= read -r COMMIT; do
             COMMIT_SHA=$(echo $COMMIT | cut -c3-9)
             COMMIT_VERSION=$(git show $COMMIT_SHA:templates/version)
+            if [ "$CURRENT_COMMIT_VERSION" != "$COMMIT_VERSION" ]; then
+              CURRENT_COMMIT_VERSION=$COMMIT_VERSION
+              echo "# $CURRENT_COMMIT_VERSION"  >> commit_history.md
+            fi
+            echo $COMMIT >> commit_history.md
             if ! printf '%s\n' "$LATEST_RELEASE_VERSION" "$COMMIT_VERSION" | sort -C -V; then
               break
             fi
-            if [ "$CURRENT_COMMIT_VERSION" != "$COMMIT_VERSION" ]; then
-              CURRENT_COMMIT_VERSION=$COMMIT_VERSION
-              echo "#$CURRENT_COMMIT_VERSION"  >> commit_history.md
-            fi
-            echo $COMMIT >> commit_history.md
           done <<< "$COMMIT_LOG"
       - name: Draft release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
