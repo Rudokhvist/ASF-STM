@@ -35,7 +35,7 @@ Object.assign(document.querySelector('.fadeout').style,{visibility: 'visible', o
 document.querySelector('.fadeout').removeAttribute('style')
 ```
 
-## Changelog (may be incomplete, just for nostalgia reasons)
+## Changelog
 
 Version | Date | Info
 :-: | :-: | :-
