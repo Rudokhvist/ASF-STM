@@ -30,7 +30,7 @@ jobs:
             echo "SHOULD_RELEASE=false" >> $GITHUB_ENV
           fi
       - name: Release
-        if: env.SHOULD_RELEASE == 'true'
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           draft: true
