@@ -17,12 +17,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5 
         with:
-          python-version: '3.13'
+          python-version: '3.12'
       - name: Build
         run: python script/build.py
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           draft: true
           files: ASF-STM.user.js
