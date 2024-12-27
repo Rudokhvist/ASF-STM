@@ -20,13 +20,15 @@ jobs:
           python-version: '3.12'
       - name: Build
         run: python script/build.py
+      - name: Get previous commit hash
+        run: echo "PREVIOUS_COMMIT_HASH=$(git rev-parse HEAD^)" >> $GITHUB_ENV
       - name: Set env
         run: |
           VERSION=$(cat templates/version)
           echo "VERSION=$VERSION" >> GITHUB_ENV.env
-          LATEST_RELEASE_VERSION=${GITHUB_REF#refs/*/}
+          LATEST_RELEASE_VERSION=$(git show $PREVIOUS_COMMIT_HASH:templates/version)
           if [ -z "$LATEST_RELEASE_VERSION" ]; then
-          LATEST_RELEASE_VERSION="0.0"
+            LATEST_RELEASE_VERSION="0.0"
           fi
           echo "LATEST_RELEASE_VERSION=$LATEST_RELEASE_VERSION" >> GITHUB_ENV.env
           if [ $(bc <<< "$VERSION > $LATEST_RELEASE_VERSION") -eq 1 ]; then
