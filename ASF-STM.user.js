@@ -10,13 +10,11 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.3
+// @version         5.0
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
 // @grant           GM_xmlhttpRequest
-// @downloadURL https://update.greasyfork.org/scripts/404754/ASF%20STM.user.js
-// @updateURL https://update.greasyfork.org/scripts/404754/ASF%20STM.meta.js
 // ==/UserScript==
 
 (function () {
@@ -50,6 +48,11 @@
         autoSend: false,
         doAfterTrade: "NOTHING",
         order: "AS_IS",
+        // scan filters
+        useScanFilters: false,
+        scanFilters: [],
+        autoAddScanFilters: true,
+        autoDeleteScanFilters: true,
     };
     let cardNames = new Set();
     let tradeParams = {
@@ -58,58 +61,7 @@
     };
 
     //styles
-    const css = `
-    #asf_stm_filters_body {
-        max-height: calc(100vh - 95px);
-        overflow-y: auto;
-    }
-    .asf_stm_tabs{
-        width: 600px;
-        display: block;
-        margin: 40px auto;
-        position: relative;
-    }
-    .asf_stm_tabs .asf_stm_tab{
-        float: left;
-        display: block;
-    }
-    .asf_stm_tabs .asf_stm_tab>input[type="radio"] {
-        position: absolute;
-        top: -9999px;
-        left: -9999px;
-    }
-    .asf_stm_tabs .asf_stm_tab>label {
-        display: block;
-        padding: 6px 21px;
-        cursor: pointer;
-        position: relative;
-        color: #FFF;
-        background: #4A83FD;
-    }
-    .asf_stm_tabs .asf_stm_content {
-        display: none;
-        overflow: scroll;
-        width: 630px;
-        height: 380px;
-        padding: 5px;
-        position: absolute;
-        top: 27px;
-        left: 0;
-        background: #303030;
-        color: #DFDFDF;
-    }
-    .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked + label {
-        top: 0;
-        background: #303030;
-        color: #F5F5F5;
-    }
-    .asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked ~ [id^="asf_stm_tab-content"] {
-        display: block;
-    }
-    textarea {
-      resize: none;
-    }
-    `;
+    const css = `{{CSS}}`;
 
     function debugTime(name) {
         if (globalSettings.debug) {
@@ -183,243 +135,58 @@
         return rgba;
     }
 
+    function createScanFilterElement(active, appId, gameName) {
+        return `
+            <div class="friendBlock" style="cursor: auto;">
+                <div class="playerAvatar ${active ? 'ingame' : 'offline'}">
+                    <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">
+                    <img class="stretch" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg">
+                    </a>
+                </div>
+                <div class="friendBlockContent">${gameName}<br>
+                    <input type="checkbox" data-app-id="${appId}" data-title="${gameName}" ${active ? 'checked' : ''}>
+                </div>
+            </div>
+        `.replaceAll(/(  |\n)/g, '');
+    }
+
     function ShowConfigDialog() {
         let filterBG = rgbaToHex(globalSettings.filterBackgroundColor);
-        let configDialogTemplate = `
-              <div style="height:420px; margin-top:-20px; font-size:12px;margin-left: -20px;width: 620px;" >
-              <ul style="margin: 0;padding: 0;" class="asf_stm_tabs">
-                <li class="asf_stm_tab">
-                  <input name="asf_stm_tabs" checked="checked"
-               id="asf_stm_tab1" type="radio"><label
-               for="asf_stm_tab1">Matcher</label>
-                  <div id="asf_stm_tab-content1" class="asf_stm_content">
-                  <fieldset style="padding-top: 0px;"><legend>MATCH FRIENDS</legend>
-                  <div style="margin-bottom: 6px;">Match with friends (only public inventories)::&nbsp;
-                  <input style="background-color: #171d25; color: white;"
-               id="matchFriends" ${globalSettings.matchFriends ? 'checked="checked"' : ""} type="checkbox">
-                  </div>
-                  </fieldset>
-                  <fieldset style="padding-top: 0px;"><legend>BOTS TO MATCH</legend>
-                  <div style="margin-bottom: 6px;"> Match with "Any"
-              bots:&nbsp;<input style="background-color: #171d25; color: white;"
-               id="anyBots" ${globalSettings.anyBots ? 'checked="checked"' : ""} type="checkbox">&nbsp;Match
-              with "Fair"
-              bots:&nbsp;<input style="background-color: #171d25; color: white;"
-               id="fairBots" ${globalSettings.fairBots ? 'checked="checked"' : ""} type="checkbox"><br>
-                  </div>
-                  <div style="margin-bottom: 6px;"> Minimum
-              items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
-               id="botMinItems" value=${globalSettings.botMinItems} type="number">&nbsp;Maximum
-              items:&nbsp;<input min=0 style="background-color: #171d25; color: white;"
-               id="botMaxItems" value=${globalSettings.botMaxItems} type="number"><a class="tooltip hover_tooltip" data-tooltip-text="Don't match with bots
-               that has less or more than required limit of items in steam inventory. 0 means no limit on number of items">
-              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
-                  <br>
-                  </div>
-                  <div style="margin-bottom: 6px;">
-                  <span style="width: 80px; display: inline-block;">Sort bots by:</span>
-                  <select style="background-color: #171d25; color: white;"
-               id="sortBotsBy0">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[0] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
-              bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[0] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[0] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[0] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[0] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
-              descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[0] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[0] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[0] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[0] === "None" ? 'selected="selected"' : ""}>None</option>
-                  </select>
-                  </div>
-                  <div style="margin-bottom: 6px;"><span
-               style="width: 80px; display: inline-block;"> …then by:</span>
-                  <select style="background-color: #171d25; color: white;" id="sortBotsBy1">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[1] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
-              bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[1] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[1] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[1] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[1] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
-              descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[1] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[1] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[1] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[1] === "None" ? 'selected="selected"' : ""}>None</option>
-                  </select>
-                  </div>
-                  <div style="margin-bottom: 6px;"><span
-               style="width: 80px; display: inline-block;">…then by:</span>
-                  <select style="background-color: #171d25; color: white;"
-               id="sortBotsBy2">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[2] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
-              bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[2] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[2] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[2] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[2] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
-              descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[2] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[2] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[2] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[2] === "None" ? 'selected="selected"' : ""}>None</option>
-                  </select>
-                  </div>
-                  <div style="margin-bottom: 6px;"><span
-               style="width: 80px; display: inline-block;">…then by:</span>
-                  <select style="background-color: #171d25; color: white;"
-               id="sortBotsBy3">
-                  <option value="MatchEverythingFirst" ${globalSettings.sortBotsBy[3] === "MatchEverythingFirst" ? 'selected="selected"' : ""}>"Any"
-              bots first</option>
-                  <option value="MatchEverythingLast" ${globalSettings.sortBotsBy[3] === "MatchEverythingLast" ? 'selected="selected"' : ""}>"Any" bots last</option>
-                  <option value="TotalGamesCountDesc" ${globalSettings.sortBotsBy[3] === "TotalGamesCountDesc" ? 'selected="selected"' : ""}>Total games count, descending</option>
-                  <option value="TotalGamesCountAsc" ${globalSettings.sortBotsBy[3] === "TotalGamesCountAsc" ? 'selected="selected"' : ""}>Total games count, ascending</option>
-                  <option value="TotalItemsCountDesc" ${globalSettings.sortBotsBy[3] === "TotalItemsCountDesc" ? 'selected="selected"' : ""}>Total matchable items count,
-              descending</option>
-                  <option value="TotalItemsCountAsc" ${globalSettings.sortBotsBy[3] === "TotalItemsCountAsc" ? 'selected="selected"' : ""}>Total matchable items count,
-              ascending</option>
-                  <option value="TotalInventoryCountDesc" ${globalSettings.sortBotsBy[3] === "TotalInventoryCountDesc" ? 'selected="selected"' : ""}>Total inventory count, descending</option>
-                  <option value="TotalInventoryCountAsc" ${globalSettings.sortBotsBy[3] === "TotalInventoryCountAsc" ? 'selected="selected"' : ""}>Total inventory count, ascending</option>
-                  <option value="None" ${globalSettings.sortBotsBy[3] === "None" ? 'selected="selected"' : ""}>None</option>
-                  </select>
-                  </div>
-                  </fieldset>
-                  <fieldset style="padding-top: 0px;"><legend>INTERFACE</legend>
-                  <div style="margin-bottom: 6px;"> Game filter pop-up
-              background color:&nbsp;<input
-               style="background-color: #171d25; color: white; height: 20px; padding: 2px;"
-               id="filterBackgroundColor" value="${filterBG[0]}" type="color">&nbsp;opacity:&nbsp;<input
-               style="height: 4px;"
-               id="filterBackgroundAlpha" min=0 max=1
-               step=0.01 value=${filterBG[1]} type="range"><br>
-                  </div>
-                  <div style="margin-bottom: 6px;"> Sort results by game
-              name:&nbsp;<input
-               style="border: medium none transparent; background-color: #171d25; color: white;"
-               id="sortByName" ${globalSettings.sortByName ? 'checked="checked"' : ""} type="checkbox">
-                  </div>
-                  </fieldset>
-                  <fieldset style="padding-top: 0px;"><legend>SETTINGS</legend>
-                    <fieldset style="padding-top: 0px; float: right; width:200px;"><legend>DEVELOPER</legend>
-                                    <div style="margin-bottom: 6px;">Debug:&nbsp;
-                                    <input style="background-color: #171d25; color: white;"
-                                    id="debug" type="checkbox"  ${globalSettings.debug ? 'checked="checked"' : ""} >
-                                     <a class="tooltip hover_tooltip" data-tooltip-text="Enable additional output to console">
-                                     <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
-                                    </div>
-                    </fieldset>
-                  <div style="margin-bottom: 6px;"> Web limiter delay,
-              ms:&nbsp;<input class="price_option_input"
-               style="border: medium none transparent; background-color: #171d25; color: white;"
-               id="weblimiter" value= ${globalSettings.weblimiter}  min=0 type="number"></div>
-                  <div style="margin-bottom: 6px;"> Delay on error,
-              ms:&nbsp;<input class="price_option_input"
-               style="background-color: #171d25; color: white;"
-               id="errorLimiter" value=${globalSettings.errorLimiter} min=0 type="number"></div>
-                  <div style="margin-bottom: 6px;"> Max errors:&nbsp;<input
-               class="price_option_input"
-               style="background-color: #171d25; color: white;"
-               id="maxErrors" value=${globalSettings.maxErrors} min=0 type="number"></div>
-                  </div>
-                  </fieldset>
-                </li>
-                <li class="asf_stm_tab">
-                  <input name="asf_stm_tabs" id="asf_stm_tab2"
-               type="radio"><label for="asf_stm_tab2">Trade
-              helper</label>
-                  <div id="asf_stm_tab-content2" class="asf_stm_content">
-                  <br>
-                  <fieldset><legend>TRADE OFFER MESSAGE</legend>
-                  <textarea style="background-color: #171d25; color: white;" id="tradeMessage" name="tradeMessage" rows="4"
-               cols="60">${globalSettings.tradeMessage}</textarea>
-                  <a class="tooltip hover_tooltip" data-tooltip-text="Custom text that will be included automatically with your
-              trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.">
-              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
-                  </fieldset>
-                  <br>
-                  <fieldset><legend>ACTION AFTER TRADE
-                  </legend>
-                  <label for="after-trade">After
-              trade...</label>
-                  <select style="background-color: #171d25; color: white;" name="after-trade" id="doAfterTrade">
-                  <option value="NOTHING" ${globalSettings.doAfterTrade === "NOTHING" ? 'selected="selected"' : ""}>Do
-              Nothing</option>
-                  <option value="CLOSE_WINDOW" ${globalSettings.doAfterTrade === "CLOSE_WINDOW" ? 'selected="selected"' : ""}>Close window</option>
-                  <option value="CLICK_OK" ${globalSettings.doAfterTrade === "CLICK_OK" ? 'selected="selected"' : ""}>Click OK</option>
-                  </select>
-                  <a class="tooltip hover_tooltip" data-tooltip-html="
-                  <p>Determines what happens when you complete a trade offer.</p>
-                  <ul>
-                    <li><strong>Do nothing</strong>: Will do
-              nothing more than the normal behavior.</li>
-                    <li><strong>Close window</strong>: Will close
-              the window after the trade offer is sent.</li>
-                    <li><strong>Click OK</strong>: Will redirect
-              you to the trade offers recap page.</li>
-                  </ul>">
-                  <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
-                  </fieldset>
-                  <br>
-                  <fieldset><legend>CARDS OFFER
-                  </legend>
-                  <label for="cards-order">Cards
-              order</label>
-                  <select style="background-color: #171d25; color: white;" class="form-control" name="cards-order"
-               id="order">
-                  <option value="SORT" ${globalSettings.order === "SORT" ? 'selected="selected"' : ""}>Sorted</option>
-                  <option value="RANDOM" ${globalSettings.order === "RANDOM" ? 'selected="selected"' : ""}>Random</option>
-                  <option value="AS_IS" ${globalSettings.order === "AS_IS" ? 'selected="selected"' : ""}>As is</option>
-                  </select>
-                   <a class="tooltip hover_tooltip" data-tooltip-html="
-                   <p>Determines which card is added to trade.</p>
-                  <ul>
-                    <li><strong>Sorted</strong>: Will sort cards by
-              their IDs before adding to trade. If you make several trade offers with
-              the same card and one of them is accepted, the rest will have message
-              &quot;cards unavilable to trade&quot;.</li>
-                    <li><strong>Random</strong>: Will add cards to
-              trade randomly. If you make several trade offers and one of them is
-              accepted, only some of them will be unavilable for trade.</li>
-                    <li><strong>As is</strong>: Script doesn't
-              change anything in order. Results vary depending on browser, steam
-              servers, weather...</li>
-                  </ul>">
-                  <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
-                  </fieldset>
-                  <br>
-                  <fieldset><legend>AUTO-SEND TRADE OFFER
-                  </legend>
-                  <label for="auto-send"><input style="background-color: #171d25; color: white;" name="auto-send"
-               id="autoSend" value="1" type="checkbox" ${globalSettings.autoSend ? 'checked="checked"' : ""}>
-              Enable</label>
-                   <a class="tooltip hover_tooltip" data-tooltip-text="Makes it possible for the script to automatically send
-              trade offers without any action on your side. This is not recommended
-              as you should always check your trade offers, but, well, this is a
-              possible thing. Please note that incomplete trade offers (missing
-              cards, ...) won't be sent automatically even when this parameter is set
-              to true.">
-              <img src="https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png"></a>
-                  </fieldset>
-                  </div>
-                </li>
-                <li class="asf_stm_tab">
-                  <input name="asf_stm_tabs" id="asf_stm_tab3"
-               type="radio"><label for="asf_stm_tab3">Blacklist</label>
-                  <div id="asf_stm_tab-content3" class="asf_stm_content">
-                  <div class="title_text profile_xp_block_remaining"><h1>Comma-separated list of ignored steamIDs</h1><div><div>
-                  <textarea style="background-color: #171d25; color: white;" id="blacklist" name="Blacklist" rows="17"
-               cols="63">${arrayToText(blacklist)}</textarea></div>
-                </li>
-              </ul>
-              </div>
-        `;
+        const questionmarkURL = 'https://store.cloudflare.steamstatic.com/public/shared/images/ico/icon_questionmark.png';
+        const options = [
+            { value: "MatchEverythingFirst", text: '"Any" bots first' },
+            { value: "MatchEverythingLast", text: '"Any" bots last' },
+            { value: "TotalGamesCountDesc", text: "Total games count, descending" },
+            { value: "TotalGamesCountAsc", text: "Total games count, ascending" },
+            { value: "TotalItemsCountDesc", text: "Total matchable items count, descending" },
+            { value: "TotalItemsCountAsc", text: "Total matchable items count, ascending" },
+            { value: "TotalInventoryCountDesc", text: "Total inventory count, descending" },
+            { value: "TotalInventoryCountAsc", text: "Total inventory count, ascending" },
+            { value: "None", text: "None" },
+        ];
+
+        function createSortSelect(idx) {
+            return `
+            <div>
+                <span style="width: 80px; display: inline-block;">${idx === 0 ? "Sort bots by:" : "…then by:"}</span>
+                <select class="asf-stm-select" id="sortBotsBy${idx}">
+                    ${options.map( ({ value, text }) =>
+                        `<option value="${value}" ${globalSettings.sortBotsBy[idx] === value ? 'selected' : ''}>${text}</option>`
+                    ).join('')}
+                </select>
+            </div>`;
+        }
+
+        globalSettings.scanFilters.sort((x, y) => x.title < y.title ? -1 : x.title > y.title ? 1 : x.appid - y.appid);
+        const scanFiltersTemplate = globalSettings.scanFilters.map(x => createScanFilterElement(x.active, x.appId, x.title)).join('');
+
+        const configDialogTemplate = `{{CONFIG_DIALOG_TEMPLATE}}`;
         let templateElement = document.createElement("template");
-        templateElement.innerHTML = configDialogTemplate.trim();
+        templateElement.innerHTML = configDialogTemplate;
         let configDialog = templateElement.content.firstChild;
+
+        configDialog.querySelector("#addScanFilterButton").addEventListener("click", addScanFilterEventHandler, false);
+        configDialog.querySelector("#clearScanFilters").addEventListener("click", clearScanFiltersEventHandler, false);
 
         unsafeWindow.ShowConfirmDialog("ASF STM Configuration", configDialog, "Save", "Cancel", "Reset").done(function (button) {
             if (button === "OK") {
@@ -448,6 +215,10 @@
                 globalSettings.autoSend = configDialog.querySelector("#autoSend").checked;
                 globalSettings.doAfterTrade = configDialog.querySelector("#doAfterTrade").selectedOptions[0].value;
                 globalSettings.order = configDialog.querySelector("#order").selectedOptions[0].value;
+                globalSettings.useScanFilters = configDialog.querySelector("#useScanFilters").checked;
+                globalSettings.autoAddScanFilters = configDialog.querySelector("#autoAddScanFilters").checked;
+                globalSettings.autoDeleteScanFilters = configDialog.querySelector("#autoDeleteScanFilters").checked;
+                globalSettings.scanFilters = Array.from(configDialog.querySelectorAll('input[data-app-id]'), x => ({appId:x.dataset.appId, title:x.dataset.title, active:x.checked}));
                 blacklist = textToArray(configDialog.querySelector("#blacklist").value);
                 SaveConfig();
                 unsafeWindow.ShowConfirmDialog("CONFIRMATION", "Some changes may not work prior to page reload. Do you want to reload the page?").done(function () {
@@ -502,6 +273,21 @@
 
     function LoadParams() {
         return JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.Params"));
+    }
+
+    function AddScanFilter(appId) {
+        if (appId <= 0) {
+            return {success: false, message: 'Invalid AppID'};
+        }
+        if (globalSettings.scanFilters.findIndex(x => x.appId == appId) != -1) {
+            return {success: false, message: 'Filter exists'};
+        }
+        globalSettings.scanFilters.push({appId: appId, title: '', active: true});
+        return {success: true, message: 'Added'};
+    }
+
+    function ResetScanFilters() {
+        globalSettings.scanFilters = [];
     }
 
     function enableButton() {
@@ -598,9 +384,8 @@
                           <div class="showcase_slot">
                             <img class="image-container" src="${itemIcon}/98x115">
                             <div class="commentthread_subscribe_hint" style="width: 98px;">${itemName}</div>
-                          </div>
-                `;
-                htmlCards += cardTemplate;
+                          </div>`;
+                htmlCards += cardTemplate.replaceAll(/(  |\n)/g, '');
             }
         }
         return htmlCards;
@@ -694,83 +479,13 @@
 
             let tradeUrlApp = tradeUrl + "&match=" + appId;
 
-            let matchTemplate = `
-                  <div class="asf_stm_appid_${appId}" style="display:${display}">
-                    <div class="badge_row is_link goo_untradable_note showcase_slot">
-                      <div class="notLoggedInText">
-                        <div title="View badge progress for this game">
-                          <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">
-                            <img style="background-color: var(--gpStoreDarkerGrey);" height=69 alt="${gameName}" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg"
-                            onerror="this.onerror=null;this.src='https://store.akamai.steamstatic.com/public/images/gift/steam_logo_digitalgiftcard.png'">
-                            <div>${gameName}</div>
-                          </a>
-                        </div>
-                        <a href="${tradeUrlApp}" target="_blank" rel="noopener noreferrer">
-                          <div class="btn_darkblue_white_innerfade btn_medium">
-                            <span>Offer a trade</span>
-                          </div>
-                        </a>
-                      </div>
-                      <div class="showcase_slot">
-                          <div class="showcase_slot profile_header">
-                              <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_in-game badge_info_title badge_row_overlay" style="height: 15px;">You</div>
-                              ${sendResult}
-                          </div>
-                          <span class="showcase_slot badge_info_title booster_creator_actions">
-                              <h1>&#10145;</h1>
-                          </span>
-                      </div>
-                      <div class="showcase_slot profile_header">
-                          <a href="https://steamcommunity.com/${botProfileLink}/gamecards/${appId}/" target="_blank" rel="noopener noreferrer">
-                              <div class="badge_info_unlocked profile_xp_block_mid avatar_block_status_online badge_info_title badge_row_overlay ellipsis" style="height: 15px;">
-                                ${sanitizeNickname(bots.Result[index].Nickname)}
-                              </div>
-                          </a>
-                        ${receiveResult}
-                      </div>
-                    </div>
-                  </div>
-            `;
+            let matchTemplate = `{{MATCH_TEMPLATE}}`;
             if (checkBox === null || checkBox.checked) {
                 matches += matchTemplate;
             }
         }
         let tradeUrlFull = tradeUrl + "&match=all";
-        let rowTemplate = `
-            <div id="asfstmbot_${index}" class="badge_row">
-              <div class="badge_row_inner">
-                <div class="badge_title_row guide_showcase_contributors">
-                  <div class="badge_title_stats">
-                    <a class="filter_all" target="_blank" rel="noopener noreferrer" >
-                      <div class="btn_darkblue_white_innerfade btn_medium" data-appids="${appIdList.join()}">
-                        <span data-appids="${appIdList.join()}">Filter All</span>
-                      </div>
-                    </a>
-                    <a class="full_trade_url" href="${tradeUrlFull}" target="_blank" rel="noopener noreferrer" >
-                      <div class="btn_darkblue_white_innerfade btn_medium">
-                        <span>Offer a trade for all</span>
-                      </div>
-                    </a>
-                  </div>
-                  <div style="float: left;" class="">
-                    <div class="user_avatar playerAvatar online">
-                      <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${botProfileLink}">
-                        <img src="https://avatars.cloudflare.steamstatic.com/${bots.Result[index].AvatarHash === null ? "fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb" : bots.Result[index].AvatarHash}.jpg" />
-                      </a>
-                     </div>
-                  </div>
-                  <div class="badge_title">
-                    &nbsp;<a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${botProfileLink}">${sanitizeNickname(bots.Result[index].Nickname)}</a>${any}
-                    &ensp;<span style="color: #8F98A0;">(${bots.Result[index].TotalInventoryCount} items)</span>
-                    &ensp;<a id="blacklist_${bots.Result[index].SteamID}" data-tooltip-text="Blacklist this bot"  class="tooltip hover_tooltip"><img
-                    src="https://community.cloudflare.steamstatic.com/public/images/skin_1/iconForumBan.png?v=1"></a>
-                  </div>
-                </div>
-                <div class="badge_title_rule"></div>
-                ${matches}
-              </div>
-            </div>
-        `;
+        let rowTemplate = `{{ROW_TEMPLATE}}`;
         let template = document.createElement("template");
         template.innerHTML = rowTemplate.trim();
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
@@ -1130,6 +845,36 @@
         }
         debugTimeEnd("Filter and sort");
 
+        /* Remove scan filters from badges without duplicates. */
+        if (globalSettings.autoDeleteScanFilters) {
+            const inactiveScanFilters = globalSettings.scanFilters.filter(x => !x.active)
+            const activeValidScanFilters = globalSettings.scanFilters.filter(aFilter => myBadges.find(aBadge => aFilter.appId == aBadge.appId));
+            globalSettings.scanFilters = inactiveScanFilters.concat(activeValidScanFilters);
+        }
+
+        /* Add missing titles to scan filters. */
+        let scanFiltersTitlesUpdated = false;
+        globalSettings.scanFilters.forEach(aFilter => {
+            if (aFilter.title === '') {
+                const badge = myBadges.find(aBadge => aBadge.appId == aFilter.appId);
+                if (badge) {
+                    aFilter.title = badge.title;
+                    scanFiltersTitlesUpdated = true;
+                }
+            }
+        });
+
+        /* Add badges with duplicates in scan filters. */
+        if (globalSettings.autoAddScanFilters) {
+            const addToScanFilters = myBadges.filter(aBadge => !globalSettings.scanFilters.find(aFilter => aFilter.appId == aBadge.appId));
+            const newScanFilters = Array.from(addToScanFilters, aBadge => ({appId: aBadge.appId, title: aBadge.title, active: true}));
+            globalSettings.scanFilters = globalSettings.scanFilters.concat(newScanFilters);
+        }
+
+        if (globalSettings.autoDeleteScanFilters || globalSettings.autoAddScanFilters || scanFiltersTitlesUpdated) {
+            SaveConfig();
+        }
+
         if (myBadges.length === 0) {
             hideThrobber();
             updateMessage("No cards to match");
@@ -1446,6 +1191,14 @@
                         stopButton.parentNode.removeChild(stopButton);
                         return;
                     } else {
+                        if (globalSettings.useScanFilters) {
+                            const filters = globalSettings.scanFilters.filter(x => x.active).map(x => Number(x.appId));
+                            debugPrint('scan filters loaded');
+                            debugPrint(filters);
+                            if (filters.length) {
+                                myBadges = myBadges.filter(x => filters.includes(x.appId));
+                            }
+                        }
                         setTimeout(
                             function () {
                                 GetOwnCards(0);
@@ -1497,6 +1250,30 @@
             }
         };
         xhr.send();
+    }
+
+    function addScanFilterEventHandler() {
+        const appId = document.querySelector('#addScanFilterAppId').value;
+        let response = AddScanFilter(appId);
+        const statusElement = document.querySelector('#addScanFilterStatus');
+        statusElement.innerText = response.message;
+        if (response.success) {
+            const newScanFilter = createScanFilterElement(true, appId, '');
+            document.querySelector('#asf-stm-filters').innerHTML += newScanFilter;
+            statusElement.style.color = '#88ff88';
+        } else {
+            statusElement.style.color = '#ffa7a2';
+        }
+    }
+
+    function clearScanFiltersEventHandler() {
+        ResetScanFilters();
+        unsafeWindow.ShowConfirmDialog("CONFIRMATION", "Are you sure you want to clear all scan filters?").done(function () {
+            SaveConfig();
+            unsafeWindow.ShowConfirmDialog("CONFIRMATION", "Reload the page for these changes to take effect. Do you want to reload the page?").done(function () {
+                document.location.reload();
+            });
+        });
     }
 
     function filterEventHandler(event) {
@@ -1574,57 +1351,7 @@
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         mainContentDiv.textContent = "";
         mainContentDiv.style.width = "90%";
-        mainContentDiv.innerHTML = `
-          <div class="profile_badges_header">
-            <div id="throbber">
-                <div class="LoadingWrapper">
-                    <div class="LoadingThrobber">
-                        <div class="Bar Bar1"></div>
-                        <div class="Bar Bar2"></div>
-                        <div class="Bar Bar3"></div>
-                    </div>
-                </div>
-            </div>
-            <div>
-            <div id="asf_stm_messagebox" class="profile_badges_header">
-               <div id="asf_stm_message" class="profile_badges_header_title" style="text-align: center;">Initialization</div>
-            </div>
-            </div>
-            <div style="width: 100%;">
-              <div id="asf_stm_stop" class="btn_darkred_white_innerfade btn_medium_thin" style="float: right;margin-top: -12px;margin-left: 10px;" title="Stop scan">
-                <span>🛑</span>
-              </div>
-              <div style="width: auto;overflow: hidden;" class="profile_xp_block_remaining_bar">
-                <div id="asf_stm_progress" class="profile_xp_block_remaining_bar_progress" style="width: 100%;transition: width 0.5s ease-in-out 0s">
-                </div>
-              </div>
-            </div>
-          </div>
-          <div id="asf_stm_filters" style="position: fixed; z-index: 1000; right: 5px; bottom: 45px; transition-duration: 500ms;
-                   transition-timing-function: ease; margin-right: -50%; padding: 5px; max-width: 40%; display: inline-block; border-radius: 2px;
-                   background:${globalSettings.filterBackgroundColor}; color: #67c1f5;">
-              <div style="white-space: nowrap;">Select:
-              <a id="asf_stm_filter_all" class="commentthread_pagelinks">
-                all
-              </a>
-              <a id="asf_stm_filter_none" class="commentthread_pagelinks">
-                none
-              </a>
-              <a id="asf_stm_filter_invert" class="commentthread_pagelinks">
-                invert
-              </a>
-            </div>
-            <hr />
-            <div id="asf_stm_filters_body">
-              <span id="asf_stm_placeholder" style="margin-right: 15px;">No matches to filter</span>
-            </div>
-          </div>
-          <div style="position: fixed;z-index: 1000;right: 5px;bottom: 5px;" id="asf_stm_filters_button_div">
-              <a id="asf_stm_filters_button" class="btnv6_blue_hoverfade btn_medium">
-                  <span>Filters</span>
-              </a>
-          </div>
-        `;
+        mainContentDiv.innerHTML = `{{MAIN_CONTENT_DIV.INNER_HTML}}`;
         document.getElementById("asf_stm_stop").addEventListener("click", stopButtonEvent, false);
         document.getElementById("asf_stm_filters_body").addEventListener("change", filterEventHandler);
         document.getElementById("asf_stm_filter_all").addEventListener("click", filterSwitchesHandler);

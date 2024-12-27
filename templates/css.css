@@ -1,0 +1,108 @@
+#asf_stm_filters_body {
+    max-height: calc(100vh - 95px);
+    overflow-y: auto;
+}
+
+.asf_stm_tabs {
+    width: 600px;
+    display: block;
+    margin: 40px auto;
+    position: relative;
+}
+
+.asf_stm_tabs .asf_stm_tab {
+    float: left;
+    display: block;
+}
+
+.asf_stm_tabs .asf_stm_tab>input[type="radio"] {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+}
+
+.asf_stm_tabs .asf_stm_tab>label {
+    display: block;
+    padding: 6px 21px;
+    cursor: pointer;
+    position: relative;
+    color: #FFF;
+    background: #4A83FD;
+}
+
+.asf_stm_tabs .asf_stm_content {
+    display: none;
+    overflow: scroll;
+    width: 630px;
+    height: 380px;
+    padding: 5px;
+    position: absolute;
+    left: 0;
+    background: #303030;
+    color: #DFDFDF;
+}
+
+.asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked + label {
+    top: 0;
+    background: #303030;
+    color: #F5F5F5;
+}
+
+.asf_stm_tabs>.asf_stm_tab>[id^="asf_stm_tab"]:checked ~ [id^="asf_stm_tab-content"] {
+    display: block;
+}
+
+textarea {
+    resize: none;
+}
+
+.asf-stm-checkbox, .asf-stm-range {
+    filter: invert(90%) hue-rotate(185deg) brightness(1.2);
+}
+
+.asf-stm-select, .asf-stm-input, .asf-stm-textarea {
+    background-color: #171d25;
+    color: white;
+}
+
+.asf-stm-config {
+    height:420px;
+    margin-top:-20px;
+    font-size:12px;
+    margin-left: -20px;
+    width: 620px;
+}
+
+.asf-stm-span {
+    max-width: 45%;
+    width: 45%;
+    display: inline-block;
+}
+
+.asf-stm-input {
+    max-width: 45%;
+}
+
+.asf-stm-margin-right {
+    margin-right: 0.4em;
+}
+
+.asf-stm-margin-bottom {
+    margin-bottom: 0.5em;
+}
+
+.friendBlock {
+    width: 32%;
+}
+
+input.appid-validity:invalid {
+    background: #ff000030;
+}
+
+input.appid-validity:valid {
+    background: #00ff0030;
+}
+
+.playerAvatar img.stretch:hover {
+    width: 85px;
+}
