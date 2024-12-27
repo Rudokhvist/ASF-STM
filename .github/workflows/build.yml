@@ -33,20 +33,31 @@ jobs:
             LATEST_RELEASE_VERSION="0.0"
           fi
           echo "LATEST_RELEASE_VERSION=$LATEST_RELEASE_VERSION" >> $GITHUB_ENV
-          if awk "BEGIN {exit !($VERSION > $LATEST_RELEASE_VERSION)}"; then
+          if ! printf '%s\n' "$VERSION" "$LATEST_RELEASE_VERSION" | sort -C -V; then
             echo "SHOULD_RELEASE=true" >> $GITHUB_ENV
           fi
-          echo "VERSION=$VERSION"
-          echo "LATEST_RELEASE_VERSION=$LATEST_RELEASE_VERSION"
       - name: Get commit history
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         run: |
-          git log -n 10 --pretty=format:"- %h - %ar: %s" > log.md
-      - name: Release
+          commits=$(git log -n 20 --pretty=format:"- %h - %as: %s")
+          CURRENT_COMMIT_VERSION=$LATEST_RELEASE_VERSION
+          while IFS= read -r COMMIT; do
+            COMMIT_SHA=$(echo $COMMIT | cut -c3-9)
+            COMMIT_VERSION=$(git show $COMMIT_SHA:templates/version)
+            if ! printf '%s\n' "$LATEST_RELEASE_VERSION" "$COMMIT_VERSION" | sort -C -V; then
+              break
+            fi
+            if [ "$CURRENT_COMMIT_VERSION" != "$COMMIT_VERSION" ]; then
+              CURRENT_COMMIT_VERSION=$COMMIT_VERSION
+              echo "#$CURRENT_COMMIT_VERSION"  >> commit_history.md
+            fi
+            echo $COMMIT >> commit_history.md
+          done <<< "$COMMIT_LOG"
+      - name: Draft release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
-          body_path: log.md
+          body_path: commit_history.md
           draft: true
           files: ASF-STM.user.js
           name: ASF-STM-plus V${{ env.VERSION }}
