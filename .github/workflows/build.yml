@@ -39,7 +39,7 @@ jobs:
       - name: Get commit history
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         run: |
-          commits=$(git log -n 20 --pretty=format:"- %h - %as: %s")
+          COMMIT_LOG=$(git log -n 20 --pretty=format:"- %h - %as: %s")
           CURRENT_COMMIT_VERSION=$LATEST_RELEASE_VERSION
           while IFS= read -r COMMIT; do
             COMMIT_SHA=$(echo $COMMIT | cut -c3-9)
