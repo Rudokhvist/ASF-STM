@@ -38,10 +38,16 @@ jobs:
           fi
           echo "VERSION=$VERSION"
           echo "LATEST_RELEASE_VERSION=$LATEST_RELEASE_VERSION"
+      - name: Get commit history
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        run: |
+          git log -n 10 --pretty=format:"- %h - %ar: %s" > log.md
       - name: Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.0
         with:
           draft: true
           files: ASF-STM.user.js
-          name: ASF-STM V${{ env.VERSION }} 
+          name: ASF-STM V${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          body_path: log.md
