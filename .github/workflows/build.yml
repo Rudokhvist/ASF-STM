@@ -44,10 +44,10 @@ jobs:
           git log -n 10 --pretty=format:"- %h - %ar: %s" > log.md
       - name: Release
         if: ${{ env.SHOULD_RELEASE == 'true' }}
-        uses: softprops/action-gh-release@v2.2.0
+        uses: softprops/action-gh-release@v2
         with:
+          body_path: log.md
           draft: true
           files: ASF-STM.user.js
-          name: ASF-STM V${{ env.VERSION }}
+          name: ASF-STM-plus V${{ env.VERSION }}
           tag_name: ${{ env.VERSION }}
-          body_path: log.md
