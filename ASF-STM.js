@@ -1436,7 +1436,7 @@
                         const friendListDocument = parser.parseFromString(response.response, 'text/html');
                         let steamID3 = [...friendListDocument.querySelectorAll('div.friendBlock')].map(x => x.dataset.miniprofile);
                         let profile = [...friendListDocument.querySelectorAll('a.friendBlockLinkOverlay')].map(x => x.href.replace(/https:\/\/steamcommunity.com\//g, ''));
-                        let avatarHash = [...friendListDocument.querySelectorAll('img')].map(x => x.src.replaceAll(/(https:\/\/avatars.fastly.steamstatic.com\/)|(_medium\.jpg)/g, ''));
+                        let avatarHash = [...friendListDocument.querySelectorAll('img')].map(x => x.match(/[a-z0-9]{40}/) ? x.match(/[a-z0-9]{40}/)[0] : null);
                         let nickname = [...friendListDocument.querySelectorAll('div.friendBlockContent')].map(x => x.childNodes[0].data.trim());
                         bots = {
                             friends: true,
