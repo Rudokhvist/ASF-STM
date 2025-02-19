@@ -1192,7 +1192,7 @@
                         return;
                     } else {
                         if (globalSettings.useScanFilters) {
-                            const filters = globalSettings.scanFilters.filter(x => x.active).map(x => Number(x.appId));
+                            const filters = globalSettings.scanFilters.map(x => Number(x.appId));
                             debugPrint('scan filters loaded');
                             debugPrint(filters);
                             if (filters.length) {
