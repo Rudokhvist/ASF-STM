@@ -22,6 +22,7 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 -   Clear scan filter input box on button click
 -   Warning on tab close
 -   Fadeout & remove text from `addScanFilterStatus`
+-   rename version file + make new rule || trim trailing newline/whitespace in build script
 ```
 <span class="fadeout">test</span>
 
