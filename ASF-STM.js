@@ -824,6 +824,18 @@
         }
         debugPrint("populated");
 
+        /* Add missing titles to scan filters. */
+        let scanFiltersTitlesUpdated = false;
+        globalSettings.scanFilters.forEach(aFilter => {
+            if (aFilter.title === '') {
+                const badge = myBadges.find(aBadge => aBadge.appId == aFilter.appId);
+                if (badge) {
+                    aFilter.title = badge.title;
+                    scanFiltersTitlesUpdated = true;
+                }
+            }
+        });
+
         debugTime("Filter and sort");
         for (let i = myBadges.length - 1; i >= 0; i--) {
             debugPrint("badge " + i + JSON.stringify(myBadges[i]));
@@ -851,18 +863,6 @@
             const activeValidScanFilters = globalSettings.scanFilters.filter(aFilter => myBadges.find(aBadge => aFilter.appId == aBadge.appId));
             globalSettings.scanFilters = inactiveScanFilters.concat(activeValidScanFilters);
         }
-
-        /* Add missing titles to scan filters. */
-        let scanFiltersTitlesUpdated = false;
-        globalSettings.scanFilters.forEach(aFilter => {
-            if (aFilter.title === '') {
-                const badge = myBadges.find(aBadge => aBadge.appId == aFilter.appId);
-                if (badge) {
-                    aFilter.title = badge.title;
-                    scanFiltersTitlesUpdated = true;
-                }
-            }
-        });
 
         /* Add badges with duplicates in scan filters. */
         if (globalSettings.autoAddScanFilters) {
