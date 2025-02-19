@@ -19,7 +19,6 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 ## WIP:
 -   Whitespace removal e.g. `createSortSelect(0).replaceAll(/(  |\n)/g, '')` or template integration for all HTML
 -   Change save filters logic
--   Add titles to disabled filters & to unmatched filters (delete old is inactive)
 -   Clear scan filter input box on button click
 -   Warning on tab close
 -   Fadeout & remove text from `addScanFilterStatus`
