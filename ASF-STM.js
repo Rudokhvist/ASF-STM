@@ -1436,10 +1436,10 @@
                     if (globalSettings.matchFriends) {
                         const parser = new DOMParser();
                         const friendListDocument = parser.parseFromString(response.response, 'text/html');
-                        let steamID3 = [...friendListDocument.querySelectorAll('div.friendBlock')].map(x => x.dataset.miniprofile);
-                        let profile = [...friendListDocument.querySelectorAll('a.friendBlockLinkOverlay')].map(x => x.href.replace(/https:\/\/steamcommunity.com\//g, ''));
-                        let avatarHash = [...friendListDocument.querySelectorAll('img')].map(x => x.match(/[a-z0-9]{40}/) ? x.match(/[a-z0-9]{40}/)[0] : null);
-                        let nickname = [...friendListDocument.querySelectorAll('div.friendBlockContent')].map(x => x.childNodes[0].data.trim());
+                        let steamID3 = Array.from(friendListDocument.querySelectorAll('div.friendBlock'), x => x.dataset.miniprofile);
+                        let profile = Array.from(friendListDocument.querySelectorAll('a.friendBlockLinkOverlay'), x => x.href.replace(/https:\/\/steamcommunity.com\//g, ''));
+                        let avatarHash = Array.from(friendListDocument.querySelectorAll('img'), img => img.src).map(str => str.match(/[a-z0-9]{40}/) ? str.match(/[a-z0-9]{40}/)[0] : null);
+                        let nickname = Array.from(friendListDocument.querySelectorAll('div.friendBlockContent'), x => x.childNodes[0].data.trim());
                         bots = {
                             friends: true,
                             Success: true,
