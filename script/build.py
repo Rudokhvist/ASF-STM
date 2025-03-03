@@ -71,6 +71,8 @@ def main():
             content = minify_js_html_template(content)
         elif file.endswith(".css"):
             content = minify_css(content)
+        elif file == 'version':
+            content = content.strip()
         
         # Replace placeholder with content
         script = script.replace(placeholder, content)
