@@ -180,7 +180,7 @@
                     <span class="asf-stm-margin-right">App Id:</span>
                     <input type="number" id="addScanFilterAppId" step="10" required class="asf-stm-input asf-stm-margin-right appid-validity">
                     <button id="addScanFilterButton" class="btn_blue_steamui btn_small asf-stm-margin-right"><span>Add scan filter</span></button>
-                    <span id="addScanFilterStatus" style="opacity: 1; transition: opacity 3s ease-out;"></span>
+                    <span id="addScanFilterStatus"></span>
                 </div>
                 <div class="asf-stm-margin-bottom">
                     <button onclick="document.querySelector('#clearScanFilters').style.visibility = 'visible'" class="btn_plum btn_small asf-stm-margin-right"><span>Clear scan filters</span></button>
