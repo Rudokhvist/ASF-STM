@@ -1253,7 +1253,8 @@
     }
 
     function addScanFilterEventHandler() {
-        const appId = document.querySelector('#addScanFilterAppId').value;
+        const appIdBox = document.querySelector('#addScanFilterAppId');
+        const appId = appIdBox.value;
         let response = AddScanFilter(appId);
         const statusElement = document.querySelector('#addScanFilterStatus');
         statusElement.innerText = response.message;
@@ -1264,6 +1265,7 @@
         } else {
             statusElement.style.color = '#ffa7a2';
         }
+        appIdBox.value = null;
     }
 
     function clearScanFiltersEventHandler() {
