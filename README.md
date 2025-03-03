@@ -18,11 +18,9 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 
 ## WIP:
 -   Whitespace removal e.g. `createSortSelect(0).replaceAll(/(  |\n)/g, '')` or template integration for all HTML
--   Change save filters logic
--   Clear scan filter input box on button click
+-   Change save filters logic (new bug: inactive filters duplication)
 -   Warning on tab close
--   Fadeout & remove text from `addScanFilterStatus`
--   rename version file + make new rule || trim trailing newline/whitespace in build script
+-   add .html.js to filenames + rule for extra checking?
 ```
 <span class="fadeout">test</span>
 
