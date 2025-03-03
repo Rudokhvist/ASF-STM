@@ -1257,6 +1257,8 @@
         const appId = appIdBox.value;
         let response = AddScanFilter(appId);
         const statusElement = document.querySelector('#addScanFilterStatus');
+        statusElement.style.transition = null;
+        statusElement.style.opacity = 1;
         statusElement.innerText = response.message;
         if (response.success) {
             const newScanFilter = createScanFilterElement(true, appId, '');
@@ -1266,6 +1268,10 @@
             statusElement.style.color = '#ffa7a2';
         }
         appIdBox.value = null;
+        setTimeout(function() {
+            statusElement.style.transition = "opacity 3s ease-out";
+            statusElement.style.opacity = 0;
+        }, 0);
     }
 
     function clearScanFiltersEventHandler() {
