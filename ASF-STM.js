@@ -862,7 +862,7 @@
         /* Remove scan filters from badges without duplicates. */
         if (globalSettings.autoDeleteScanFilters) {
             const inactiveScanFilters = globalSettings.scanFilters.filter(x => !x.active)
-            const activeValidScanFilters = globalSettings.scanFilters.filter(aFilter => myBadges.find(aBadge => aFilter.appId == aBadge.appId));
+            const activeValidScanFilters = globalSettings.scanFilters.filter(aFilter => aFilter.active && myBadges.find(aBadge => aFilter.appId == aBadge.appId));
             globalSettings.scanFilters = inactiveScanFilters.concat(activeValidScanFilters);
         }
 
@@ -1194,7 +1194,7 @@
                         return;
                     } else {
                         if (globalSettings.useScanFilters) {
-                            const filters = globalSettings.scanFilters.map(x => Number(x.appId));
+                            const filters = globalSettings.scanFilters.filter(x => x.active).map(x => Number(x.appId));
                             debugPrint('scan filters loaded');
                             debugPrint(filters);
                             if (filters.length) {
