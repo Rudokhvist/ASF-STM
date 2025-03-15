@@ -67,7 +67,7 @@ def main():
         # Get and minify content where possible
         with open(f'./templates/{file}', 'r') as f:
             content = f.read()
-        if file.endswith(".js"):
+        if file.endswith(".html.js"):
             content = minify_js_html_template(content)
         elif file.endswith(".css"):
             content = minify_css(content)

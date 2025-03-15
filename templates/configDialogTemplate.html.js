@@ -50,6 +50,13 @@
                     <span class="asf-stm-margin-right">Sort results by game name</span>
                     <input type="checkbox" id="sortByName" class="asf-stm-checkbox" ${globalSettings.sortByName ? 'checked' : ''}>
                 </div>
+                <div class="asf-stm-margin-bottom">
+                    <span class="asf-stm-margin-right">Prevent navigation or page leave</span>
+                    <input type="checkbox" id="preventClose" class="asf-stm-checkbox" ${globalSettings.preventClose ? 'checked' : ''}>
+                    <a class="tooltip hover_tooltip" data-tooltip-text="A dialog box will prevent navigation and exitting the page to avoid losing progess.">
+                        <img src="${questionmarkURL}">
+                    </a>
+                </div>
             </fieldset>
 
             <fieldset style="display: grid;grid-template-columns: repeat(2, 1fr);grid-template-rows: repeat(3, 1fr);gap: 12px;">

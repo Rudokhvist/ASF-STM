@@ -43,6 +43,7 @@
         debug: false,
         maxErrors: 3,
         filterBackgroundColor: "rgba(23,26,33,0.8)",
+        preventClose: false,
         // for trade offer
         tradeMessage: "ASF STM Matcher",
         autoSend: false,
@@ -211,6 +212,7 @@
                 let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
                 globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
                 globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value), configDialog.querySelector("#filterBackgroundAlpha").value);
+                globalSettings.preventClose = configDialog.querySelector("#preventClose").value;
                 globalSettings.tradeMessage = configDialog.querySelector("#tradeMessage").value;
                 globalSettings.autoSend = configDialog.querySelector("#autoSend").checked;
                 globalSettings.doAfterTrade = configDialog.querySelector("#doAfterTrade").selectedOptions[0].value;
@@ -1346,6 +1348,11 @@
     }
 
     function buttonPressedEvent() {
+        if (globalSettings.preventClose) {
+            window.addEventListener('beforeunload', function (e) {
+                e.preventDefault();
+            });
+        }
         if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success !== true || bots.cacheTime + botCacheTime < Date.now() || globalSettings.matchFriends !== bots.friends) {
             debugPrint("Bot cache invalidated");
             fetchBots();
@@ -1517,7 +1524,6 @@
     }
     //Main
     LoadConfig();
-    localStorage.removeItem("Ryzhehvost.ASF.STM"); //we used to store classid database here before, clean this up.
     if (document.getElementsByClassName("badge_details_set_favorite").length !== 0) {
         let profileRegex = /http[s]?:\/\/steamcommunity.com\/(.*)\/badges.*/g;
         let result = profileRegex.exec(document.location);
