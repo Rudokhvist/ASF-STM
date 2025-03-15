@@ -43,7 +43,7 @@
         debug: false,
         maxErrors: 3,
         filterBackgroundColor: "rgba(23,26,33,0.8)",
-        preventClose: false,
+        preventClose: true,
         // for trade offer
         tradeMessage: "ASF STM Matcher",
         autoSend: false,
