@@ -18,6 +18,8 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 
 ## WIP:
 - [Add your request here](https://github.com/iBreakEverything/ASF-STM-Enhancement/pulls)
+- [Fix filtering new `rowTemplate`s `tradeUrlFull` value](https://github.com/Rudokhvist/ASF-STM/issues/37)
+- 
 
 ## Changelog
 
