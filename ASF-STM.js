@@ -214,7 +214,7 @@
                 let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
                 globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
                 globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value), configDialog.querySelector("#filterBackgroundAlpha").value);
-                globalSettings.preventClose = configDialog.querySelector("#preventClose").value;
+                globalSettings.preventClose = configDialog.querySelector("#preventClose").checked;
                 globalSettings.tradeMessage = configDialog.querySelector("#tradeMessage").value;
                 globalSettings.autoSend = configDialog.querySelector("#autoSend").checked;
                 globalSettings.doAfterTrade = configDialog.querySelector("#doAfterTrade").selectedOptions[0].value;
