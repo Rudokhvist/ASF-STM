@@ -141,7 +141,7 @@
             <div class="friendBlock" style="cursor: auto;">
                 <div class="playerAvatar ${active ? 'ingame' : 'offline'}">
                     <a target="_blank" rel="noopener noreferrer" href="https://steamcommunity.com/${myProfileLink}/gamecards/${appId}/">
-                    <img class="stretch" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg">
+                        <img class="stretch" src="https://steamcdn-a.akamaihd.net/steam/apps/${appId}/capsule_184x69.jpg">
                     </a>
                 </div>
                 <div class="friendBlockContent">${gameName}<br>
@@ -169,13 +169,15 @@
         function createSortSelect(idx) {
             return `
             <div>
-                <span style="width: 80px; display: inline-block;">${idx === 0 ? "Sort bots by:" : "…then by:"}</span>
+                <span style="width: 80px; display: inline-block;">
+                    ${idx === 0 ? "Sort bots by:" : "…then by:"}
+                </span>
                 <select class="asf-stm-select" id="sortBotsBy${idx}">
                     ${options.map( ({ value, text }) =>
                         `<option value="${value}" ${globalSettings.sortBotsBy[idx] === value ? 'selected' : ''}>${text}</option>`
                     ).join('')}
                 </select>
-            </div>`;
+            </div>`.replaceAll(/(  |\n)/g, '');
         }
 
         globalSettings.scanFilters.sort((x, y) => x.title < y.title ? -1 : x.title > y.title ? 1 : x.appid - y.appid);

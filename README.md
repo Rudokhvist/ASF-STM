@@ -17,13 +17,13 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 - **DEV** Automatic releases: every version bump a draft release will be generated for convenience.
 
 ## WIP:
--   Whitespace removal e.g. `createSortSelect(0).replaceAll(/(  |\n)/g, '')` or template integration for all HTML
--   Change save filters logic (new bug: inactive filters duplication)
+- [Add your request here](https://github.com/iBreakEverything/ASF-STM-Enhancement/pulls)
 
 ## Changelog
 
 Version | Date | Info
 :-: | :-: | :-
+v5.2.2 | 2025-03-15 | Latest version, all features added
 v5.2.0 | 2025-03-15 | Filter fixes, optimizations, UI enchancements
 v5.1.0 | 2025-03-03 | Misc fixes
 v5.0.13 | 2024-12-27 | Fiends, Filters and CI/CD
