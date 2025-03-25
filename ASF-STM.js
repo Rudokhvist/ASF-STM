@@ -484,9 +484,7 @@
             let tradeUrlApp = tradeUrl + "&match=" + appId;
 
             let matchTemplate = `{{MATCH_TEMPLATE}}`;
-            if (checkBox === null || checkBox.checked) {
-                matches += matchTemplate;
-            }
+            matches += matchTemplate;
         }
         let tradeUrlFull = tradeUrl + "&match=all";
         let rowTemplate = `{{ROW_TEMPLATE}}`;
