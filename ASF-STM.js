@@ -60,6 +60,14 @@
         matches: {},
         filter: [],
     };
+    /* Mutation observer for filter counting */
+    const observer = new MutationObserver((mutationList, observer) => {
+        for (const mutation of mutationList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'data-count') {
+                mutation.target.querySelector('b').innerText = `(${mutation.target.dataset.count})`
+            }
+        }
+    });
 
     //styles
     const css = `{{CSS}}`;
@@ -385,10 +393,11 @@
             let itemName = item.cards[j].item;
             for (let k = 0; k < item.cards[j].count; k++) {
                 let cardTemplate = `
-                          <div class="showcase_slot">
-                            <img class="image-container" src="${itemIcon}/98x115">
-                            <div class="commentthread_subscribe_hint" style="width: 98px;">${itemName}</div>
-                          </div>`;
+                    <div class="showcase_slot">
+                        <img class="image-container" src="${itemIcon}/98x115">
+                        <div class="commentthread_subscribe_hint" style="width: 98px;">${itemName}</div>
+                    </div>
+                `;
                 htmlCards += cardTemplate.replaceAll(/(  |\n)/g, '');
             }
         }
@@ -466,13 +475,16 @@
             //add filter
             let checkBox = document.getElementById("astm_" + appId);
             if (checkBox === null) {
-                let newFilter = `<span style="margin-right: 15px; white-space: nowrap; display: inline-block;"><input type="checkbox" id="astm_${appId}" checked="" /><label for="astm_${appId}">${gameName}</label></span>`;
+                let newFilter = `<span style="margin-right: 15px; white-space: nowrap; display: inline-block;"><input type="checkbox" id="astm_${appId}" checked="" /><label for="astm_${appId}" data-count="1">${gameName} <b>(1)</b></label></span>`;
                 let spanTemplate = document.createElement("template");
                 spanTemplate.innerHTML = newFilter.trim();
                 filterWidget.appendChild(spanTemplate.content.firstChild);
                 tradeParams.filter.push(Number(appId));
                 SaveParams();
             } else {
+                /* Increment match count */
+                const label = checkBox.parentElement.querySelector('label');
+                label.dataset.count = parseInt(label.dataset.count) + 1;
                 if (checkBox.checked === false) {
                     display = "none";
                 }
@@ -1373,6 +1385,7 @@
         document.getElementById("asf_stm_filter_none").addEventListener("click", filterSwitchesHandler);
         document.getElementById("asf_stm_filter_invert").addEventListener("click", filterSwitchesHandler);
         document.getElementById("asf_stm_filters_button").addEventListener("click", filtersButtonEvent, false);
+        observer.observe(document.querySelector('#asf_stm_filters_body'), { attributes: true, childList: true, subtree: true });
         maxPages = 1;
         stop = false;
         myBadges.length = 0;

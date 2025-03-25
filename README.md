@@ -19,6 +19,7 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 ## WIP:
 - [Add your request here](https://github.com/iBreakEverything/ASF-STM-Enhancement/pulls)
 - Count matches in filters
+- Generate 2 files: one with debugPrint, debugTime, deepClone and one without
 
 ## Changelog
 
