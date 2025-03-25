@@ -1,11 +1,9 @@
 # ASF-STM userscript
 
 ## Installation
-
 To install this script, go to [the latest release](https://github.com/iBreakEverything/ASF-STM-Enhancement/releases/latest) and click on "ASF-STM.user.js" entry in assets.
 
 ## Description
-
 It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvist/ASF-STM) script does with some extra features.
 
 ## Added features
@@ -18,13 +16,12 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 
 ## WIP:
 - [Add your request here](https://github.com/iBreakEverything/ASF-STM-Enhancement/pulls)
-- Count matches in filters
-- Generate 2 files: one with debugPrint, debugTime, deepClone and one without
 
 ## Changelog
-
 Version | Date | Info
 :-: | :-: | :-
+v5.4.0 | 2025-03-25 | User file and debug file
+v5.3.1 | 2025-03-25 | Filter match count
 v5.3.0 | 2025-03-25 | Critical bug fix #37
 v5.2.2 | 2025-03-15 | Latest version, all features added
 v5.2.0 | 2025-03-15 | Filter fixes, optimizations, UI enchancements

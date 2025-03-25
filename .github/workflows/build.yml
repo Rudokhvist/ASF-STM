@@ -59,6 +59,8 @@ jobs:
         with:
           body_path: commit_history.md
           draft: true
-          files: ASF-STM.user.js
+          files: |
+            ASF-STM.user.js
+            ASF-STM.debug.js
           name: ASF-STM-plus V${{ env.VERSION }}
           tag_name: ${{ env.VERSION }}

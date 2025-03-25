@@ -3,6 +3,7 @@ import re
 
 USERSCRIPT_FILE = 'ASF-STM.js'
 RELEASE_FILE = 'ASF-STM.user.js'
+DEBUG_FILE = 'ASF-STM.debug.js'
 
 # Transform placeholder from camelCase to SCREAMING_SNAKE_CASE
 def screaming_snake_to_camel(string):
@@ -57,7 +58,7 @@ def minify_css(css):
     return ''.join(rules)
 
 def main():
-    with open(USERSCRIPT_FILE, 'r') as f:
+    with open(USERSCRIPT_FILE, 'r', encoding='utf8') as f:
         script = f.read()
 
     for file in os.listdir('./templates'):
@@ -65,11 +66,11 @@ def main():
         placeholder = '{{%s}}' % screaming_snake_to_camel(os.path.splitext(file)[0])
 
         # Get and minify content where possible
-        with open(f'./templates/{file}', 'r') as f:
+        with open(f'./templates/{file}', 'r', encoding='utf8') as f:
             content = f.read()
-        if file.endswith(".js"):
+        if file.endswith('.js'):
             content = minify_js_html_template(content)
-        elif file.endswith(".css"):
+        elif file.endswith('.css'):
             content = minify_css(content)
         elif file == 'version':
             content = content.strip()
@@ -77,7 +78,12 @@ def main():
         # Replace placeholder with content
         script = script.replace(placeholder, content)
 
-    with open(RELEASE_FILE, 'w') as f:
-        f.write(script)
+
+    with open(DEBUG_FILE, 'w', encoding='utf8') as f:
+        f.write(script.replace('  // DEBUG', ''))
+
+    with open(RELEASE_FILE, 'w', encoding='utf8') as f:
+        release_script = '\n'.join([x for x in script.split('\n') if not x.endswith('// DEBUG')])
+        f.write(release_script)
 
 main()

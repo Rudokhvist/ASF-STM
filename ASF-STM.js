@@ -40,7 +40,7 @@
         botMaxItems: 0,
         weblimiter: 300,
         errorLimiter: 30000,
-        debug: false,
+        debug: true,  // DEBUG
         maxErrors: 3,
         filterBackgroundColor: "rgba(23,26,33,0.8)",
         preventClose: true,
@@ -72,24 +72,24 @@
     //styles
     const css = `{{CSS}}`;
 
-    function debugTime(name) {
-        if (globalSettings.debug) {
-            console.time(name);
-        }
-    }
-
-    function debugTimeEnd(name) {
-        if (globalSettings.debug) {
-            console.timeEnd(name);
-        }
-    }
-
-    function debugPrint(msg) {
-        if (globalSettings.debug) {
-            console.log(new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 }) + " : " + msg);
-        }
-    }
-
+    function debugTime(name) {  // DEBUG
+        if (globalSettings.debug) {  // DEBUG
+            console.time(name);  // DEBUG
+        }  // DEBUG
+    }  // DEBUG
+  // DEBUG
+    function debugTimeEnd(name) {  // DEBUG
+        if (globalSettings.debug) {  // DEBUG
+            console.timeEnd(name);  // DEBUG
+        }  // DEBUG
+    }  // DEBUG
+  // DEBUG
+    function debugPrint(msg) {  // DEBUG
+        if (globalSettings.debug) {  // DEBUG
+            console.log(new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 }) + " : " + msg);  // DEBUG
+        }  // DEBUG
+    }  // DEBUG
+  // DEBUG
     function deepClone(object) {
         return JSON.parse(JSON.stringify(object));
     }
@@ -128,7 +128,7 @@
         let re = /rgba\(([.\d]+),([.\d]+),([.\d]+),([.\d]+)\)/g;
         let result = re.exec(rgba);
         if (result === null || result.length !== 5) {
-            debugPrint("failed to parse color!");
+            debugPrint("failed to parse color!");  // DEBUG
             return ["#171a21", 0.8];
         }
         return ["#" + Number(result[1]).toString(16) + Number(result[2]).toString(16) + Number(result[3]).toString(16), Number(result[4])];
@@ -140,7 +140,7 @@
         if (result) {
             return result[1] + alpha + ")";
         }
-        debugPrint("failed to mix alpha!");
+        debugPrint("failed to mix alpha!");  // DEBUG
         return rgba;
     }
 
@@ -218,7 +218,7 @@
                 globalSettings.weblimiter = isNaN(newweblimiter) ? globalSettings.weblimiter : newweblimiter;
                 let newerrorLimiter = Number(configDialog.querySelector("#errorLimiter").value);
                 globalSettings.errorLimiter = isNaN(newerrorLimiter) ? globalSettings.errorLimiter : newerrorLimiter;
-                globalSettings.debug = configDialog.querySelector("#debug").checked;
+                globalSettings.debug = configDialog.querySelector("#debug").checked;  // DEBUG
                 let newmaxErrors = Number(configDialog.querySelector("#maxErrors").value);
                 globalSettings.maxErrors = isNaN(newmaxErrors) ? globalSettings.maxErrors : newmaxErrors;
                 globalSettings.filterBackgroundColor = mixAlpha(hexToRgba(configDialog.querySelector("#filterBackgroundColor").value), configDialog.querySelector("#filterBackgroundAlpha").value);
@@ -279,7 +279,7 @@
         if (tradeParams.cardNames === undefined) {
             tradeParams.cardNames = Array.from(cardNames);
         }
-        debugPrint(JSON.stringify(tradeParams.filter));
+        debugPrint(JSON.stringify(tradeParams.filter));  // DEBUG
         localStorage.setItem("Ryzhehvost.ASF.STM.Params", JSON.stringify(tradeParams));
     }
 
@@ -405,7 +405,7 @@
     }
 
     function checkRow(row) {
-        debugPrint("checkRow");
+        debugPrint("checkRow");  // DEBUG
         let matches = row.getElementsByClassName("badge_row");
         let visible = false;
         for (let i = 0; i < matches.length; i++) {
@@ -422,7 +422,7 @@
     }
 
     function addMatchRow(index) {
-        debugPrint("addMatchRow " + index);
+        debugPrint("addMatchRow " + index);  // DEBUG
         let itemsToSend = bots.Result[index].itemsToSend;
         let itemsToReceive = bots.Result[index].itemsToReceive;
 
@@ -450,7 +450,7 @@
         } else {
             tradeUrl += `${getPartner(bots.Result[index].SteamID)}&token=${bots.Result[index].TradeToken}&source=asfstm`;
         }
-        debugPrint(tradeUrl);
+        debugPrint(tradeUrl);  // DEBUG
 
         let botProfileLink = globalSettings.matchFriends ? `${bots.Result[index].SteamIDText}` : `profiles/${bots.Result[index].SteamID}`;
         let matches = "";
@@ -512,7 +512,7 @@
 
     function calcState(badge) {
         //state 0 - less than max sets; state 1 - we have max sets, even out the rest, state 2 - all even
-        debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet + " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);
+        debugPrint("maxSets=" + badge.maxSets + " LastSet=" + badge.lastSet + " Max cards=" + badge.cards[badge.maxCards - 1].count + " Min cards=" + badge.cards[0].count);  // DEBUG
         if (badge.cards[badge.maxCards - 1].count === badge.maxSets) {
             if (badge.cards[0].count === badge.lastSet) {
                 return 2; //nothing to do
@@ -559,17 +559,17 @@
         let itemsToSend = [];
         let itemsToReceive = [];
 
-        debugPrint("bot's cards");
-        debugPrint(JSON.stringify(botBadges));
-        debugPrint("our cards");
-        debugPrint(JSON.stringify(myBadges));
+        debugPrint("bot's cards");  // DEBUG
+        debugPrint(JSON.stringify(botBadges));  // DEBUG
+        debugPrint("our cards");  // DEBUG
+        debugPrint(JSON.stringify(myBadges));  // DEBUG
 
         for (let i = 0; i < botBadges.length; i++) {
             let myBadge = deepClone(myBadges[i]);
             let theirBadge = deepClone(botBadges[i]);
             let myState = calcState(myBadge);
-            debugPrint("state=" + myState);
-            debugPrint("myapp=" + myBadge.appId + " botapp=" + theirBadge.appId);
+            debugPrint("state=" + myState);  // DEBUG
+            debugPrint("myapp=" + myBadge.appId + " botapp=" + theirBadge.appId);  // DEBUG
             while (myState < 2) {
                 let foundMatch = false;
                 for (let j = 0; j < theirBadge.maxCards; j++) {
@@ -579,25 +579,25 @@
                         let myInd = myBadge.cards.findIndex((a) => a.number === theirBadge.cards[j].number); //index of slot where we receive card
                         if ((myState === 0 && myBadge.cards[myInd].count < myBadge.maxSets) || (myState === 1 && myBadge.cards[myInd].count < myBadge.lastSet)) {
                             //we need this ^Kfor the Emperor
-                            debugPrint("we need this: " + theirBadge.cards[j].item + " (" + theirBadge.cards[j].count + ")");
+                            debugPrint("we need this: " + theirBadge.cards[j].item + " (" + theirBadge.cards[j].count + ")");  // DEBUG
                             //find a card to match.
                             for (let k = 0; k < myInd; k++) {
                                 //index of card we give
-                                debugPrint("i=" + i + " j=" + j + " k=" + k + " myState=" + myState);
-                                debugPrint("we have this: " + myBadge.cards[k].item + " (" + myBadge.cards[k].count + ")");
+                                debugPrint("i=" + i + " j=" + j + " k=" + k + " myState=" + myState);  // DEBUG
+                                debugPrint("we have this: " + myBadge.cards[k].item + " (" + myBadge.cards[k].count + ")");  // DEBUG
                                 if ((myState === 0 && myBadge.cards[k].count > myBadge.maxSets) || (myState === 1 && myBadge.cards[k].count > myBadge.lastSet)) {
                                     //that's fine for us
-                                    debugPrint("it's a good trade for us");
+                                    debugPrint("it's a good trade for us");  // DEBUG
                                     let theirInd = theirBadge.cards.findIndex((a) => a.number === myBadge.cards[k].number); //index of slot where they will receive card
                                     if (!bots.Result[index].MatchEverything) {
                                         //make sure it's neutral+ for them
                                         if (theirBadge.cards[theirInd].count >= theirBadge.cards[j].count) {
-                                            debugPrint("Not fair for them");
-                                            debugPrint("they have this: " + theirBadge.cards[theirInd].item + " (" + theirBadge.cards[theirInd].count + ")");
+                                            debugPrint("Not fair for them");  // DEBUG
+                                            debugPrint("they have this: " + theirBadge.cards[theirInd].item + " (" + theirBadge.cards[theirInd].count + ")");  // DEBUG
                                             continue; //it's not neutral+, check other options
                                         }
                                     }
-                                    debugPrint("it's a match!");
+                                    debugPrint("it's a match!");  // DEBUG
                                     let itemToSend = {
                                         item: myBadge.cards[k].item,
                                         count: 1,
@@ -661,7 +661,7 @@
                                 //if we found something - we need to sort cards again and start over.
                                 myBadge.cards.sort((a, b) => b.count - a.count);
                                 myState = calcState(myBadge);
-                                debugPrint("new myState=" + myState);
+                                debugPrint("new myState=" + myState);  // DEBUG
                             }
                         }
                     }
@@ -673,10 +673,10 @@
             }
         }
 
-        debugPrint("items to send");
-        debugPrint(JSON.stringify(itemsToSend));
-        debugPrint("items to receive");
-        debugPrint(JSON.stringify(itemsToReceive));
+        debugPrint("items to send");  // DEBUG
+        debugPrint(JSON.stringify(itemsToSend));  // DEBUG
+        debugPrint("items to receive");  // DEBUG
+        debugPrint(JSON.stringify(itemsToReceive));  // DEBUG
         bots.Result[index].itemsToSend = itemsToSend;
         bots.Result[index].itemsToReceive = itemsToReceive;
         if (itemsToSend.length > 0) {
@@ -684,13 +684,13 @@
             addMatchRow(index);
             callback();
         } else {
-            debugPrint("no matches");
+            debugPrint("no matches");  // DEBUG
             callback();
         }
     }
 
     function GetOwnCards(index) {
-        debugPrint("GetOwnCards " + index);
+        debugPrint("GetOwnCards " + index);  // DEBUG
 
         if (index === 0) {
             for (let i = 0; i < myBadges.length; i++) {
@@ -720,7 +720,7 @@
                 let status = xhr.status;
                 if (status === 200) {
                     try {
-                        debugPrint("processing badge " + myBadges[index].appId);
+                        debugPrint("processing badge " + myBadges[index].appId);  // DEBUG
                         if (xhr.response != undefined && xhr.response.eresult == 1) {
                             if (xhr.response.badgedata.rgCards.length >= 5) {
                                 errors = 0;
@@ -733,7 +733,7 @@
                                         iconUrl: xhr.response.badgedata.rgCards[i].imgurl,
                                         number: i,
                                     };
-                                    debugPrint(JSON.stringify(newcard));
+                                    debugPrint(JSON.stringify(newcard));  // DEBUG
                                     myBadges[index].cards.push(newcard);
                                     cardNames.add(xhr.response.badgedata.rgCards[i].markethash);
                                 }
@@ -749,14 +749,14 @@
                                 );
                                 return;
                             } else {
-                                debugPrint("less than 5 cards in a badge - something is wrong");
-                                debugPrint(JSON.stringify(xhr.response));
+                                debugPrint("less than 5 cards in a badge - something is wrong");  // DEBUG
+                                debugPrint(JSON.stringify(xhr.response));  // DEBUG
                                 errors++;
                             }
                         } else {
                             updateMessage("Error getting own badge data, badge: " + myBadges[index].appId);
                             if (xhr.response != undefined) {
-                                debugPrint("eresult = " + xhr.response.eresult);
+                                debugPrint("eresult = " + xhr.response.eresult);  // DEBUG
                             }
                             hideThrobber();
                             enableButton();
@@ -765,8 +765,8 @@
                             return;
                         }
                     } catch (error) {
-                        debugPrint(error);
-                        debugPrint(JSON.stringify(xhr.response));
+                        debugPrint(error);  // DEBUG
+                        debugPrint(JSON.stringify(xhr.response));  // DEBUG
                         errors++;
                     }
                 } else {
@@ -785,7 +785,7 @@
                     if (status !== 200) {
                         updateMessage("Error getting badge data, ERROR " + status);
                     } else {
-                        debugPrint("Error getting own badge data, wrong badge " + myBadges[index].appId);
+                        debugPrint("Error getting own badge data, wrong badge " + myBadges[index].appId);  // DEBUG
                         setTimeout(
                             (function (index) {
                                 return function () {
@@ -824,7 +824,7 @@
                     );
                     return;
                 } else {
-                    debugPrint("error");
+                    debugPrint("error");  // DEBUG
                     updateMessage("Error getting badge data");
                     hideThrobber();
                     enableButton();
@@ -836,7 +836,7 @@
             xhr.send();
             return; //do this synchronously to avoid rate limit
         }
-        debugPrint("populated");
+        debugPrint("populated");  // DEBUG
 
         /* Add missing titles to scan filters. */
         let scanFiltersTitlesUpdated = false;
@@ -850,9 +850,9 @@
             }
         });
 
-        debugTime("Filter and sort");
+        debugTime("Filter and sort");  // DEBUG
         for (let i = myBadges.length - 1; i >= 0; i--) {
-            debugPrint("badge " + i + JSON.stringify(myBadges[i]));
+            debugPrint("badge " + i + JSON.stringify(myBadges[i]));  // DEBUG
 
             myBadges[i].cards.sort((a, b) => b.count - a.count);
             if (myBadges[i].cards[0].count - myBadges[i].cards[myBadges[i].cards.length - 1].count < 2) {
@@ -867,9 +867,9 @@
             }
             myBadges[i].maxSets = Math.floor(totalCards / myBadges[i].maxCards);
             myBadges[i].lastSet = Math.ceil(totalCards / myBadges[i].maxCards);
-            debugPrint("totalCards=" + totalCards + " maxSets=" + myBadges[i].maxSets + " lastSet=" + myBadges[i].lastSet);
+            debugPrint("totalCards=" + totalCards + " maxSets=" + myBadges[i].maxSets + " lastSet=" + myBadges[i].lastSet);  // DEBUG
         }
-        debugTimeEnd("Filter and sort");
+        debugTimeEnd("Filter and sort");  // DEBUG
 
         /* Remove scan filters from badges without duplicates. */
         if (globalSettings.autoDeleteScanFilters) {
@@ -904,11 +904,11 @@
     }
 
     function GetCards(index, userindex) {
-        debugPrint("GetCards " + index + " : " + userindex);
+        debugPrint("GetCards " + index + " : " + userindex);  // DEBUG
 
         if (userindex >= bots.Result.length) {
-            debugPrint("finished");
-            debugPrint(new Date(Date.now()));
+            debugPrint("finished");  // DEBUG
+            debugPrint(new Date(Date.now()));  // DEBUG
             hideThrobber();
             hideMessage();
             updateProgress(1, 1); // limit reached, fill the bar
@@ -925,12 +925,12 @@
             (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
             blacklist.includes(bots.Result[userindex].SteamID)
         ) {
-            debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
-            debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
-            debugPrint(!bots.Result[userindex].MatchEverything && !globalSettings.fairBots);
-            debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
-            debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
-            debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
+            debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);  // DEBUG
+            debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);  // DEBUG
+            debugPrint(!bots.Result[userindex].MatchEverything && !globalSettings.fairBots);  // DEBUG
+            debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);  // DEBUG
+            debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);  // DEBUG
+            debugPrint(blacklist.includes(bots.Result[userindex].SteamID));  // DEBUG
             GetCards(0, userindex + 1);
             return;
         }
@@ -963,13 +963,13 @@
                 }
                 let status = xhr.status;
                 if (status === 200) {
-                    debugPrint("processing badge " + botBadges[index].appId);
+                    debugPrint("processing badge " + botBadges[index].appId);  // DEBUG
                     if (null !== xhr.response.documentElement.querySelector("body.private_profile")
                     || (globalSettings.matchFriends && null === xhr.response.documentElement.querySelector(".badge_card_set_cards"))) {
                         if (globalSettings.matchFriends) {
-                            debugPrint("friend has inventory set to friends-only (badges are private):" + bots.Result[userindex].SteamID);
+                            debugPrint("friend has inventory set to friends-only (badges are private):" + bots.Result[userindex].SteamID);  // DEBUG
                         } else {
-                            debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);
+                            debugPrint("bot has private profile:" + bots.Result[userindex].SteamID);  // DEBUG
                         }
                         setTimeout(
                             (function (index, userindex) {
@@ -1005,7 +1005,7 @@
                                 iconUrl: icon,
                                 number: i,
                             };
-                            debugPrint(JSON.stringify(newcard));
+                            debugPrint(JSON.stringify(newcard));  // DEBUG
                             botBadges[index].cards.push(newcard);
                         }
 
@@ -1021,7 +1021,7 @@
                         return;
                     } else {
                         //if can't find any cards on badge page - retry, that's must be a bug.
-                        debugPrint(xhr.response.documentElement.outerHTML);
+                        debugPrint(xhr.response.documentElement.outerHTML);  // DEBUG
                         errors++;
                     }
                 } else {
@@ -1040,7 +1040,7 @@
                     if (status !== 200) {
                         updateMessage("Error getting badge data, ERROR " + status);
                     } else {
-                        debugPrint("Error getting badge data, malformed HTML. Ignoring badge " + botBadges[index].appId);
+                        debugPrint("Error getting badge data, malformed HTML. Ignoring badge " + botBadges[index].appId);  // DEBUG
                         setTimeout(
                             (function (index, userindex) {
                                 return function () {
@@ -1079,7 +1079,7 @@
                     );
                     return;
                 } else {
-                    debugPrint("error");
+                    debugPrint("error");  // DEBUG
                     updateMessage("Error getting badge data");
                     hideThrobber();
                     enableButton();
@@ -1091,11 +1091,11 @@
             xhr.send();
             return; //do this synchronously to avoid rate limit
         }
-        debugPrint("populated");
+        debugPrint("populated");  // DEBUG
 
-        debugTime("Filter and sort");
+        debugTime("Filter and sort");  // DEBUG
         for (let i = botBadges.length - 1; i >= 0; i--) {
-            debugPrint("badge " + i + JSON.stringify(botBadges[i]));
+            debugPrint("badge " + i + JSON.stringify(botBadges[i]));  // DEBUG
 
             botBadges[i].cards.sort((a, b) => b.count - a.count);
             let totalCards = 0;
@@ -1104,11 +1104,11 @@
             }
             botBadges[i].maxSets = Math.floor(totalCards / botBadges[i].maxCards);
             botBadges[i].lastSet = Math.ceil(totalCards / botBadges[i].maxCards);
-            debugPrint("totalCards=" + totalCards + " maxSets=" + botBadges[i].maxSets + " lastSet=" + botBadges[i].lastSet);
+            debugPrint("totalCards=" + totalCards + " maxSets=" + botBadges[i].maxSets + " lastSet=" + botBadges[i].lastSet);  // DEBUG
         }
-        debugTimeEnd("Filter and sort");
+        debugTimeEnd("Filter and sort");  // DEBUG
 
-        debugPrint(bots.Result[userindex].SteamID);
+        debugPrint(bots.Result[userindex].SteamID);  // DEBUG
         compareCards(userindex, function () {
             setTimeout(
                 (function (userindex) {
@@ -1138,7 +1138,7 @@
             let status = xhr.status;
             if (status === 200) {
                 errors = 0;
-                debugPrint("processing page " + page);
+                debugPrint("processing page " + page);  // DEBUG
                 updateMessage("Processing badges page " + page);
                 if (page === 1) {
                     let pageLinks = xhr.response.documentElement.getElementsByClassName("pagelink");
@@ -1195,8 +1195,8 @@
                         globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                 } else {
-                    debugPrint("all badge pages processed");
-                    debugPrint(globalSettings.weblimiter + globalSettings.errorLimiter * errors);
+                    debugPrint("all badge pages processed");  // DEBUG
+                    debugPrint(globalSettings.weblimiter + globalSettings.errorLimiter * errors);  // DEBUG
                     if (myBadges.length === 0) {
                         hideThrobber();
                         updateMessage("No cards to match");
@@ -1207,8 +1207,8 @@
                     } else {
                         if (globalSettings.useScanFilters) {
                             const filters = globalSettings.scanFilters.filter(x => x.active).map(x => Number(x.appId));
-                            debugPrint('scan filters loaded');
-                            debugPrint(filters);
+                            debugPrint('scan filters loaded');  // DEBUG
+                            debugPrint(filters);  // DEBUG
                             if (filters.length) {
                                 myBadges = myBadges.filter(x => filters.includes(x.appId));
                             }
@@ -1254,7 +1254,7 @@
                     globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                 );
             } else {
-                debugPrint("error getting badge page");
+                debugPrint("error getting badge page");  // DEBUG
                 updateMessage("Error getting badge page");
                 hideThrobber();
                 enableButton();
@@ -1366,7 +1366,7 @@
             });
         }
         if (bots === null || bots.Result === undefined || bots.Result.length === 0 || bots.Success !== true || bots.cacheTime + botCacheTime < Date.now() || globalSettings.matchFriends !== bots.friends) {
-            debugPrint("Bot cache invalidated");
+            debugPrint("Bot cache invalidated");  // DEBUG
             fetchBots();
             return;
         }
@@ -1374,7 +1374,7 @@
             bots.Result.sort(botSorter);
         }
         disableButton();
-        debugPrint(new Date(Date.now()));
+        debugPrint(new Date(Date.now()));  // DEBUG
         let mainContentDiv = document.getElementsByClassName("maincontent")[0];
         mainContentDiv.textContent = "";
         mainContentDiv.style.width = "90%";
@@ -1454,8 +1454,8 @@
                 if (response.status !== 200) {
                     disableButton();
                     document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
-                    debugPrint("can't fetch list of bots, ERROR=" + response.status);
-                    debugPrint(JSON.stringify(response));
+                    debugPrint("can't fetch list of bots, ERROR=" + response.status);  // DEBUG
+                    debugPrint(JSON.stringify(response));  // DEBUG
                     return;
                 }
                 try {
@@ -1493,45 +1493,45 @@
                         bots.friends = false;
                     }
                     if (bots.Success) {
-                        debugPrint("found total " + bots.Result.length + " bots");
+                        debugPrint("found total " + bots.Result.length + " bots");  // DEBUG
                         localStorage.setItem("Ryzhehvost.ASF.STM.BotCache", JSON.stringify(bots));
                         buttonPressedEvent();
                     } else {
                         //ASF backend does not indicate success
                         disableButton();
                         document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots, try later");
-                        debugPrint("can't fetch list of bots");
-                        debugPrint(bots.Message);
-                        debugPrint(JSON.stringify(response));
+                        debugPrint("can't fetch list of bots");  // DEBUG
+                        debugPrint(bots.Message);  // DEBUG
+                        debugPrint(JSON.stringify(response));  // DEBUG
                         return;
                     }
                     return;
                 } catch (e) {
                     disableButton();
                     document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots, try later");
-                    debugPrint("can't fetch list of bots");
-                    debugPrint(e);
-                    debugPrint(JSON.stringify(response));
+                    debugPrint("can't fetch list of bots");  // DEBUG
+                    debugPrint(e);  // DEBUG
+                    debugPrint(JSON.stringify(response));  // DEBUG
                     return;
                 }
             },
             onerror: function (response) {
                 disableButton();
                 document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
-                debugPrint("can't fetch list of bots");
-                debugPrint(JSON.stringify(response));
+                debugPrint("can't fetch list of bots");  // DEBUG
+                debugPrint(JSON.stringify(response));  // DEBUG
             },
             onabort: function (response) {
                 disableButton();
                 document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
-                debugPrint("can't fetch list of bots - aborted");
-                debugPrint(JSON.stringify(response));
+                debugPrint("can't fetch list of bots - aborted");  // DEBUG
+                debugPrint(JSON.stringify(response));  // DEBUG
             },
             ontimeout: function (response) {
                 disableButton();
                 document.getElementById("asf_stm_button_div").setAttribute("title", "Can't fetch list of bots");
-                debugPrint("can't fetch list of bots - timeout");
-                debugPrint(JSON.stringify(response));
+                debugPrint("can't fetch list of bots - timeout");  // DEBUG
+                debugPrint(JSON.stringify(response));  // DEBUG
             },
         });
     }
@@ -1547,12 +1547,12 @@
             myProfileLink = "my";
         }
 
-        debugPrint(profileRegex);
+        debugPrint(profileRegex);  // DEBUG
 
         let botCache = JSON.parse(localStorage.getItem("Ryzhehvost.ASF.STM.BotCache"));
         if (botCache === null || botCache.cacheTime === undefined || botCache.cacheTime === null || botCache.cacheTime + botCacheTime < Date.now() || globalSettings.matchFriends !== botCache.friends) {
             botCache = null;
-            debugPrint("Bot cache invalidated");
+            debugPrint("Bot cache invalidated");  // DEBUG
         } else {
             bots = botCache;
         }
@@ -1718,7 +1718,7 @@
             anchor.appendChild(notif);
             window.getComputedStyle(notif).opacity;
             notif.style.opacity = 1;
-            debugPrint("everything done");
+            debugPrint("everything done");  // DEBUG
         }
 
         function checkContexts(g_s, g_v) {
@@ -1749,7 +1749,7 @@
                 } catch (e) {
                     // no matter what happens, restore old cookie
                     restoreCookie(g_v.oldCookie);
-                    debugPrint(e);
+                    debugPrint(e);  // DEBUG
                 }
             } else {
                 window.setTimeout(checkContexts, 500, g_s, g_v);
@@ -1794,20 +1794,20 @@
                 if (matches === undefined) {
                     throw new Error("no matches with this partner");
                 }
-                debugPrint(JSON.stringify(matches));
+                debugPrint(JSON.stringify(matches));  // DEBUG
                 for (let i = 0; i < filter.length; i++) {
                     let appid = filter[i];
 
                     if (matches[appid] === undefined) {
                         //can happen, filter is just allowed appids, not necessaryly available on this bot.
-                        debugPrint("no such appid in matches: " + appid);
+                        debugPrint("no such appid in matches: " + appid);  // DEBUG
                     } else {
-                        debugPrint("adding matches for appid: " + appid);
+                        debugPrint("adding matches for appid: " + appid);  // DEBUG
                         Cards[0] = Cards[0].concat(matches[appid].send.map((card) => decodeURIComponent(params.cardNames[card])));
                         Cards[1] = Cards[1].concat(matches[appid].receive.map((card) => decodeURIComponent(params.cardNames[card])));
                     }
                 }
-                debugPrint(JSON.stringify(Cards));
+                debugPrint(JSON.stringify(Cards));  // DEBUG
 
                 if (Cards[0].length !== Cards[1].length) {
                     unsafeWindow.ShowAlertDialog("Different items amount", "You've requested " + (Cards[0].length > Cards[1].length ? "less" : "more") + " items than you give. Script aborting.");
