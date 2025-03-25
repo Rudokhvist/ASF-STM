@@ -18,13 +18,13 @@ It does what the original [ASF-STM (by Rudokhvist)](https://github.com/Rudokhvis
 
 ## WIP:
 - [Add your request here](https://github.com/iBreakEverything/ASF-STM-Enhancement/pulls)
-- [Fix filtering new `rowTemplate`s `tradeUrlFull` value](https://github.com/Rudokhvist/ASF-STM/issues/37)
-- 
+- Count matches in filters
 
 ## Changelog
 
 Version | Date | Info
 :-: | :-: | :-
+v5.3.0 | 2025-03-25 | Critical bug fix #37
 v5.2.2 | 2025-03-15 | Latest version, all features added
 v5.2.0 | 2025-03-15 | Filter fixes, optimizations, UI enchancements
 v5.1.0 | 2025-03-03 | Misc fixes
