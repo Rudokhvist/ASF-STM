@@ -13,19 +13,19 @@ So, since when I made this script, you have a third alternative - this script ca
 
 ### Pros:
 
--   Unlike majority of tools after steam rate limits update, it works!
--   It's free!
--   You don't need ASF, just an userscript in your browser. Perfect if you only want to find matches occasionally, not all the time.
--   Unlike STM, it's executed on your PC, so it will always work (may be unstable though if steam is under heavy load)
--   You send all trades yourself, so everything is under your control.
--   You only trade with bots, so your trades will be confirmed almost instantly (if everything is okay)
--   Automatically adds cards to trade offer, can auto-send it too if you want.
+- Unlike majority of tools after steam rate limits update, it works!
+- It's free!
+- You don't need ASF, just an userscript in your browser. Perfect if you only want to find matches occasionally, not all the time.
+- Unlike STM, it's executed on your PC, so it will always work (may be unstable though if steam is under heavy load)
+- You send all trades yourself, so everything is under your control.
+- You only trade with bots, so your trades will be confirmed almost instantly (if everything is okay)
+- Automatically adds cards to trade offer, can auto-send it too if you want.
 
 ### Cons:
 
--   Only works with ASF listing. You can't find matches with your friends or other users, you still need STM for this.
--   Pretty slow. May take an hour or even more to scan all bots. Depends on how many badges you need to find matches for. You can limit bots you want to trade with in configuration section.
--   It may still lack some of STM features.
+- Only works with ASF listing. You can't find matches with your friends or other users, you still need STM for this.
+- Pretty slow. May take an hour or even more to scan all bots. Depends on how many badges you need to find matches for. You can limit bots you want to trade with in configuration section.
+- It may still lack some of STM features.
 
 Consider this a permanent beta version, it's very raw and may contain bugs. So, please, check every trade before sending and report bugs and suggestions.
 If you want to participate in development - feel free to send [issues](https://github.com/Rudokhvist/ASF-STM/issues) and [pull requests](https://github.com/Rudokhvist/ASF-STM/pulls)!
@@ -34,10 +34,10 @@ If you want to participate in development - feel free to send [issues](https://g
 
 ## Future plans and TODOs:
 
--   For now script works only with regular cards. I plan to add foil cards matching too
--   Add an option to match cards for already completed badges too.
--   Add whitelist/blacklist of matched apps, to make it possible to match only a couple of needed badges without wasting time on the rest.
--   ??? your suggestions. Use [issues](https://github.com/Rudokhvist/ASF-STM/issues) for those. (LOL, I have too much TODO already, fat chance!)
+- For now script works only with regular cards. I plan to add foil cards matching too
+- Add an option to match cards for already completed badges too.
+- Add whitelist/blacklist of matched apps, to make it possible to match only a couple of needed badges without wasting time on the rest.
+- ??? your suggestions. Use [issues](https://github.com/Rudokhvist/ASF-STM/issues) for those. (LOL, I have too much TODO already, fat chance!)
 
 ## Changelog (may be incomplete, just for nostalgia reasons)
 

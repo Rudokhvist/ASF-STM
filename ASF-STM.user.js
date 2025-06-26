@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.2
+// @version         4.3
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -1131,7 +1131,8 @@
             (!bots.Result[userindex].MatchEverything && !globalSettings.fairBots) ||
             bots.Result[userindex].TotalInventoryCount < globalSettings.botMinItems ||
             (globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount > globalSettings.botMaxItems) ||
-            blacklist.includes(bots.Result[userindex].SteamID)
+            blacklist.includes(bots.Result[userindex].SteamID) ||
+            !bots.Result[userindex].MatchableTypes.includes(5)
         ) {
             debugPrint("Ignoring bot " + bots.Result[userindex].SteamID);
             debugPrint(bots.Result[userindex].MatchEverything && !globalSettings.anyBots);
@@ -1139,6 +1140,7 @@
             debugPrint(bots.Result[userindex].TotalInventoryCount >= globalSettings.botMinItems);
             debugPrint(globalSettings.botMaxItems > 0 && bots.Result[userindex].TotalInventoryCount <= globalSettings.botMaxItems);
             debugPrint(blacklist.includes(bots.Result[userindex].SteamID));
+            debugPrint(bots.Result[userindex].MatchableTypes);
             GetCards(0, userindex + 1);
             return;
         }
