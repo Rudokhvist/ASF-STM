@@ -10,7 +10,7 @@
 // @match           *://steamcommunity.com/profiles/*/badges
 // @match           *://steamcommunity.com/profiles/*/badges/
 // @match           *://steamcommunity.com/tradeoffer/new/*source=asfstm*
-// @version         4.3
+// @version         4.4
 // @connect         asf.justarchi.net
 // @grant           GM.xmlHttpRequest
 // @grant           GM_addStyle
@@ -1111,7 +1111,7 @@
         }
     }
 
-    function GetCards(index, userindex) {
+    function GetCards(index, userindex, idLink) {
         debugPrint("GetCards " + index + " : " + userindex);
 
         if (userindex >= bots.Result.length) {
@@ -1153,7 +1153,7 @@
             }
         }
         if (index < botBadges.length) {
-            let profileLink = "profiles/" + bots.Result[userindex].SteamID;
+            let profileLink = idLink || ("profiles/" + bots.Result[userindex].SteamID);
             updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
             updateProgress(userindex, bots.Result.length);
 
@@ -1214,13 +1214,19 @@
                             botBadges[index].cards.push(newcard);
                         }
 
+                        if (!idLink) {
+                            const idMatch = xhr.responseURL.match(/(id\/.+?)\//);
+                            if (idMatch && idMatch[1]) {
+                                idLink = idMatch[1];
+                            }
+                        }
                         index++;
                         setTimeout(
-                            (function (index, userindex) {
+                            (function (index, userindex, idLink) {
                                 return function () {
-                                    GetCards(index, userindex);
+                                    GetCards(index, userindex, idLink);
                                 };
-                            })(index, userindex),
+                            })(index, userindex, idLink),
                             globalSettings.weblimiter,
                         );
                         return;
@@ -1234,11 +1240,11 @@
                 }
                 if ((status < 400 || status >= 500) && errors <= globalSettings.maxErrors) {
                     setTimeout(
-                        (function (index, userindex) {
+                        (function (index, userindex, idLink) {
                             return function () {
-                                GetCards(index, userindex);
+                                GetCards(index, userindex, idLink);
                             };
-                        })(index, userindex),
+                        })(index, userindex, idLink),
                         globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                 } else {
@@ -1247,11 +1253,11 @@
                     } else {
                         debugPrint("Error getting badge data, malformed HTML. Ignoring badge " + botBadges[index].appId);
                         setTimeout(
-                            (function (index, userindex) {
+                            (function (index, userindex, idLink) {
                                 return function () {
-                                    GetCards(index, userindex);
+                                    GetCards(index, userindex, idLink);
                                 };
-                            })(index, userindex),
+                            })(index, userindex, idLink),
                             globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                         );
                     }
@@ -1275,11 +1281,11 @@
                 errors++;
                 if (errors <= globalSettings.maxErrors) {
                     setTimeout(
-                        (function (index, userindex) {
+                        (function (index, userindex, idLink) {
                             return function () {
-                                GetCards(index, userindex);
+                                GetCards(index, userindex, idLink);
                             };
-                        })(index, userindex),
+                        })(index, userindex, idLink),
                         globalSettings.weblimiter + globalSettings.errorLimiter * errors,
                     );
                     return;
