@@ -61,6 +61,7 @@ v3.3 2023-07-06 - Major update! Integrated (modified) STM helper script, added c
 v4.1 2024-07-01 - Major update - rework communication with helper script part, prevent "item not found errors", minor fixes and improvements</br>
 v4.2 2024-10-22 - Add "Filter all" button to matches, contribution by [@iBreakEverything](https://github.com/iBreakEverything)</br>
 v4.3 2025-06-26 - Don't try to match with bots that don't have `Cards` in `MatchableTypes` (thanks [@nolddor](https://github.com/nolddor)!)
+v4.4 2025-08-14 - Reduce the additional time consumption caused by 302 redirects when getting cards. (thanks [@HCLonely](https://github.com/HCLonely)!)
 
 ## Support my work
 
