@@ -63,7 +63,6 @@ v4.2 2024-10-22 - Add "Filter all" button to matches, contribution by [@iBreakEv
 v4.3 2025-06-26 - Don't try to match with bots that don't have `Cards` in `MatchableTypes` (thanks [@nolddor](https://github.com/nolddor)!)
 v4.4 2025-08-14 - Reduce the additional time consumption caused by 302 redirects when getting cards. (thanks [@HCLonely](https://github.com/HCLonely)!)
 
-
 ## Support my work
 
 This script is free and open source, and will always stay like that. But if you want to support me, feel free to donate
