@@ -1153,7 +1153,7 @@
             }
         }
         if (index < botBadges.length) {
-            let profileLink = idLink || ("profiles/" + bots.Result[userindex].SteamID);
+            let profileLink = idLink || "profiles/" + bots.Result[userindex].SteamID;
             updateMessage("Fetching bot " + (userindex + 1).toString() + " of " + bots.Result.length.toString() + " (badge " + (index + 1) + " of " + botBadges.length + ")");
             updateProgress(userindex, bots.Result.length);
 
